@@ -74,14 +74,17 @@ Clone the repository:
 git clone https://github.com/vcommits/llm_quality_framework.git
 cd llm_quality_framework
 
+
 Install dependencies:
 
 pip install -r requirements.txt
+
 
 Set up your environment variables:
 Create environment variables for the API keys you will be using. For example, on Windows:
 
 setx OPENAI_API_KEY "your_secret_key_here"
+
 
 (Remember to restart your terminal after setting a new variable.)
 
@@ -92,21 +95,26 @@ Run a simple test with Grok (the default):
 
 python llm_tests/api_client.py
 
+
 Test the OpenAI API with a specific model:
 
 python llm_tests/api_client.py --api openai --model gpt-4o
+
 
 Test the Anthropic API with a custom system persona:
 
 python llm_tests/api_client.py --api anthropic --system-prompt "You are a world-class poet. Respond only in haikus."
 
+
 Run any test in mock mode (no cost):
 
 python llm_tests/api_client.py --api gemini --mock
 
+
 See all available options:
 
 python llm_tests/api_client.py --help
+
 
 Project Roadmap
 This project is being built iteratively, with a clear vision for a comprehensive, full-stack quality framework.
