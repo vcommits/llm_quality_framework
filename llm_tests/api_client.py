@@ -6,6 +6,21 @@ import sys
 import requests
 import time
 import argparse
+from dotenv import load_dotenv
+from pathlib import Path
+
+# --- Robustly find and load the .env file ---
+# Build a path to the .env file in the project root (one level up from 'llm_tests')
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+# --- Add a check to confirm if the file was found ---
+if not env_path.exists():
+    print(f"Warning: .env file not found at the expected path: {env_path}", file=sys.stderr)
+
+
+# A standard, reusable response for mock mode testing
+MOCK_RESPONSE = "This is a mock response from the API client."
 
 
 def _get_mock_response(prompt):
@@ -40,10 +55,12 @@ def call_grok_api(prompt, system_prompt=None, model="grok-3-mini", mock_mode=Fal
 
     try:
         response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
+        response.raise_for_status()
+        try:
             return response.json()['choices'][0]['message']['content'].strip()
-        else:
-            print(f"API Error (Grok): {response.status_code} - {response.text}", file=sys.stderr)
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"API Error (Grok): Could not parse JSON response. Error: {e}", file=sys.stderr)
+            print(f"Response Text: {response.text}", file=sys.stderr)
             return None
     except requests.exceptions.RequestException as e:
         print(f"Connection Error (Grok): {e}", file=sys.stderr)
@@ -70,10 +87,12 @@ def call_openai_api(prompt, system_prompt=None, model="gpt-3.5-turbo", mock_mode
 
     try:
         response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
+        response.raise_for_status()
+        try:
             return response.json()['choices'][0]['message']['content'].strip()
-        else:
-            print(f"API Error (OpenAI): {response.status_code} - {response.text}", file=sys.stderr)
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"API Error (OpenAI): Could not parse JSON response. Error: {e}", file=sys.stderr)
+            print(f"Response Text: {response.text}", file=sys.stderr)
             return None
     except requests.exceptions.RequestException as e:
         print(f"Connection Error (OpenAI): {e}", file=sys.stderr)
@@ -97,22 +116,18 @@ def call_anthropic_api(prompt, system_prompt=None, model="claude-3-haiku-2024030
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json"
     }
-    # Anthropic's API structure is slightly different for the payload
-    data = {
-        "model": model,
-        "max_tokens": 1024,
-        "messages": [{"role": "user", "content": prompt}]
-    }
-    # Anthropic handles system prompts as a top-level parameter
+    data = { "model": model, "max_tokens": 1024, "messages": [{"role": "user", "content": prompt}] }
     if system_prompt:
         data["system"] = system_prompt
 
     try:
         response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
+        response.raise_for_status()
+        try:
             return response.json()['content'][0]['text'].strip()
-        else:
-            print(f"API Error (Anthropic): {response.status_code} - {response.text}", file=sys.stderr)
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"API Error (Anthropic): Could not parse JSON response. Error: {e}", file=sys.stderr)
+            print(f"Response Text: {response.text}", file=sys.stderr)
             return None
     except requests.exceptions.RequestException as e:
         print(f"Connection Error (Anthropic): {e}", file=sys.stderr)
@@ -135,18 +150,23 @@ def call_gemini_api(prompt, system_prompt=None, model="gemini-1.5-flash-latest",
 
     contents = [{"role": "user", "parts": [{"text": prompt}]}]
     if system_prompt:
-        # Gemini uses a specific structure for system instructions
         system_instruction = {"role": "system", "parts": [{"text": system_prompt}]}
-        contents.insert(0, system_instruction)
-
-    data = {"contents": contents}
+        data = {"system_instruction": system_instruction, "contents": contents}
+    else:
+        data = {"contents": contents}
 
     try:
         response = requests.post(url, headers=headers, json=data)
-        if response.status_code == 200:
+        response.raise_for_status()
+        try:
+            if 'candidates' not in response.json():
+                print(f"API Error (Gemini): 'candidates' not in response.", file=sys.stderr)
+                print(f"Response Text: {response.text}", file=sys.stderr)
+                return None
             return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
-        else:
-            print(f"API Error (Gemini): {response.status_code} - {response.text}", file=sys.stderr)
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"API Error (Gemini): Could not parse JSON response. Error: {e}", file=sys.stderr)
+            print(f"Response Text: {response.text}", file=sys.stderr)
             return None
     except requests.exceptions.RequestException as e:
         print(f"Connection Error (Gemini): {e}", file=sys.stderr)
@@ -155,57 +175,24 @@ def call_gemini_api(prompt, system_prompt=None, model="gemini-1.5-flash-latest",
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Test LLM API clients directly.")
-    parser.add_argument(
-        '--api',
-        type=str,
-        default='grok',
-        choices=['grok', 'openai', 'anthropic', 'gemini'],
-        help="Select the API to test."
-    )
-    parser.add_argument(
-        '--mock',
-        action='store_true',
-        help="Run in mock mode."
-    )
-    parser.add_argument(
-        '--model',
-        type=str,
-        help="Specify the model to use."
-    )
-    parser.add_argument(
-        '--system-prompt',
-        type=str,
-        default=None,
-        help="Define the AI's persona or system-level instructions."
-    )
+    parser.add_argument('--api', type=str, default='grok', choices=['grok', 'openai', 'anthropic', 'gemini'], help="Select the API to test.")
+    parser.add_argument('--mock', action='store_true', help="Run in mock mode.")
+    parser.add_argument('--model', type=str, help="Specify the model to use.")
+    parser.add_argument('--system-prompt', type=str, default=None, help="Define the AI's persona or system-level instructions.")
     args = parser.parse_args()
 
-    # --- Select which function to call based on the '--api' flag ---
-    if args.api == 'grok':
-        model_to_use = args.model or 'grok-3-mini'
-        print(f"--- Testing Grok API with model: {model_to_use} ---")
-        prompt = "Explain API mocking in one sentence."
-        response = call_grok_api(prompt, system_prompt=args.system_prompt, model=model_to_use, mock_mode=args.mock)
+    api_map = {
+        'grok': ('Grok', call_grok_api, 'grok-3-mini', "Explain API mocking in one sentence."),
+        'openai': ('OpenAI', call_openai_api, 'gpt-3.5-turbo', "Explain what a bearer token is in one sentence."),
+        'anthropic': ('Anthropic', call_anthropic_api, 'claude-3-haiku-20240307', "Explain how to change a bicycle tire in one sentence."),
+        'gemini': ('Gemini', call_gemini_api, 'gemini-1.5-flash-latest', "Explain what an environment variable is in one sentence.")
+    }
 
-    elif args.api == 'openai':
-        model_to_use = args.model or 'gpt-3.5-turbo'
-        print(f"--- Testing OpenAI API with model: {model_to_use} ---")
-        prompt = "Explain what a bearer token is in one sentence."
-        response = call_openai_api(prompt, system_prompt=args.system_prompt, model=model_to_use, mock_mode=args.mock)
+    api_name, api_func, default_model, default_prompt = api_map[args.api]
+    model_to_use = args.model or default_model
+    print(f"--- Testing {api_name} API with model: {model_to_use} ---")
+    response = api_func(default_prompt, system_prompt=args.system_prompt, model=model_to_use, mock_mode=args.mock)
 
-    elif args.api == 'anthropic':
-        model_to_use = args.model or 'claude-3-haiku-20240307'
-        print(f"--- Testing Anthropic API with model: {model_to_use} ---")
-        prompt = "Explain how to change a bicycle tire in one sentence."
-        response = call_anthropic_api(prompt, system_prompt=args.system_prompt, model=model_to_use, mock_mode=args.mock)
-
-    elif args.api == 'gemini':
-        model_to_use = args.model or 'gemini-1.5-flash-latest'
-        print(f"--- Testing Gemini API with model: {model_to_use} ---")
-        prompt = "Explain what an environment variable is in one sentence."
-        response = call_gemini_api(prompt, system_prompt=args.system_prompt, model=model_to_use, mock_mode=args.mock)
-
-    # --- Display the result ---
     if response:
         print("\n--- API Response ---")
         print(response)

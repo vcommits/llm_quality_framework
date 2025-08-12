@@ -1,40 +1,71 @@
 # File: llm_tests/LLMKeywords.py
-# Purpose: This file acts as a Robot Framework library, exposing our api_client functions as keywords.
+# Purpose:  Acts as a bridge, exposing our Python API client functions
+#           and evaluator functions as keywords that Robot Framework can understand.
 
-# We import the functions we already built and tested.
+import subprocess
+import shlex
+import sys
+import os
+from robot.api.deco import keyword
+from robot.api import logger
 from llm_tests.api_client import call_grok_api, call_openai_api, call_anthropic_api, call_gemini_api
+from llm_tests.test_evaluators import evaluate_toxicity
+
 
 class LLMKeywords:
     """
-    A library of keywords for interacting with various LLM APIs in Robot Framework.
+    This class contains all the custom keywords for interacting with LLM APIs
+    and evaluating their responses.
     """
 
-    def call_grok_api(self, prompt, system_prompt=None, model="grok-3-mini", mock_mode=False):
-        """
-        A Robot Framework keyword to call the Grok API.
-        See the api_client.py file for full documentation.
-        """
-        print(f"\n-- Executing Keyword: Call Grok API --")
-        return call_grok_api(prompt, system_prompt, model, mock_mode)
+    # =========================================================================
+    # DEEPTEAM RED TEAMING KEYWORD
+    # =========================================================================
 
-    def call_openai_api(self, prompt, system_prompt=None, model="gpt-3.5-turbo", mock_mode=False):
+    @keyword(name="Run Deepteam Red Teaming")
+    def run_deepteam_red_teaming(self, api: str, tier: str, attack: str, custom_prompts_file: str = None,
+                                 mock: bool = False):
         """
-        A Robot Framework keyword to call the OpenAI API.
+        Executes the deepteam test runner script with specified parameters.
         """
-        print(f"\n-- Executing Keyword: Call OpenAI API --")
-        return call_openai_api(prompt, system_prompt, model, mock_mode)
+        logger.info("--- Starting DeepTeam Red Teaming Execution from Robot Framework ---")
+        logger.info(f"API: {api}, Tier: {tier}, Attack: {attack}, Custom File: {custom_prompts_file}, Mock: {mock}")
 
-    def call_anthropic_api(self, prompt, system_prompt=None, model="claude-3-haiku-20240307", mock_mode=False):
-        """
-        A Robot Framework keyword to call the Anthropic API.
-        """
-        print(f"\n-- Executing Keyword: Call Anthropic API --")
-        return call_anthropic_api(prompt, system_prompt, model, mock_mode)
+        command = [
+            sys.executable,
+            "tests/run_deepteam_tests.py",
+            "--api", api,
+            "--tier", tier,
+            "--attack", attack
+        ]
 
-    def call_gemini_api(self, prompt, system_prompt=None, model="gemini-1.5-flash-latest", mock_mode=False):
-        """
-        A Robot Framework keyword to call the Gemini API.
-        """
-        print(f"\n-- Executing Keyword: Call Gemini API --")
-        return call_gemini_api(prompt, system_prompt, model, mock_mode)
+        if custom_prompts_file:
+            command.extend(["--custom-prompts", custom_prompts_file])
+        if mock:
+            command.append("--mock")
 
+        env = os.environ.copy()
+        project_root = os.path.abspath('.')
+        env['PYTHONPATH'] = f"{project_root}{os.pathsep}{env.get('PYTHONPATH', '')}"
+
+        try:
+            logger.info(f"Executing command: {shlex.join(command)}")
+            # By removing 'capture_output', the subprocess output will appear live in the terminal.
+            process = subprocess.run(
+                command,
+                check=True,
+                env=env
+            )
+            logger.info("--- DeepTeam script executed successfully. ---")
+        except subprocess.CalledProcessError as e:
+            logger.error("!!! DEEPTEAM SCRIPT FAILED !!!")
+            logger.error(f"Exit Code: {e.returncode}")
+            # stdout/stderr are not captured in this mode, so we report that.
+            logger.error(f"--- STDOUT ---\n{'Not captured in live output mode.'}")
+            logger.error(f"--- STDERR ---\n{'Not captured in live output mode.'}")
+            raise AssertionError(f"DeepTeam script failed with exit code {e.returncode}. Check logs for details.")
+        except FileNotFoundError:
+            logger.error("!!! SCRIPT NOT FOUND !!!")
+            logger.error(
+                "Could not find 'tests/run_deepteam_tests.py'. Make sure you are running tests from the project root directory.")
+            raise

@@ -1,145 +1,46 @@
-The LLM Quality Framework: A Gatekeeper's Toolkit for AI
-This project is a multi-provider test automation framework designed to systematically evaluate the quality, safety, and reliability of Large Language Models.
+# **🤖 LLM Quality & Security Framework: A Learning Journey 🚀**
 
-A Gatekeeper's Mission in the Age of AI
-Our future is being written by AI. As a QA Engineer with over two decades of experience, I have seen technology evolve from the pre-internet era to this pivotal moment. My career has been dedicated to being the last line of defense for the end-user, ensuring that technology is not just functional, but safe, reliable, and intuitive.
+Welcome\! This project is a chronicle of my deep dive into AI Quality Engineering, undertaken as a self-directed learning initiative during a career transition. It's a **work-in-progress** that documents the real-world process of building a complex testing framework, tackling challenging bugs, and learning new technologies from the ground up.
 
-I believe this mission is more critical now than ever. The rapid advancement of LLMs presents incredible opportunities, but also significant risks in areas like bias, factual accuracy, and security. This project is my contribution to addressing these challenges. It is a toolkit built from a "Purple Team" perspective—combining a defender's mindset (Blue Team) with an attacker's curiosity (Red Team) to ensure that the AI tools we build are a force for good for all of humanity.
+The goal is to create a robust, multi-provider framework for the automated red teaming of Large Language Models from providers like **Google (Gemini)**, **OpenAI (GPT)**, **Anthropic (Claude)**, and **xAI (Grok)**.
 
-This framework is a living lab, a place to ask the hard questions and build the tools to answer them.
+## **✨ Key Features & Skills Demonstrated**
 
-Technology Stack
-This framework integrates a modern, full-stack QA toolkit to provide comprehensive testing capabilities.
+This framework, while still under development, successfully integrates several key technologies and showcases a range of QE skills:
 
-Core Framework & Tooling:
+* **🌐 Multi-Provider Testing**: A flexible API client capable of interfacing with multiple, distinct LLM provider APIs.  
+* **⚔️ Hybrid Attack Scenarios**: Orchestrates tests using both the deepteam library's built-in attacks and custom, user-defined prompts from .yaml files.  
+* **💾 Persistent Data Logging**: A modular SQLite logger that captures detailed results from every test case, creating a rich dataset for analysis.  
+* **📊 Interactive Data Visualization**: A standalone Python script that uses **pandas** and **PyGWalker** to launch an interactive, Tableau-like dashboard for exploring the test data.  
+* **🤖 Robust Orchestration**: Leverages the **Robot Framework** to define and manage complex test suites, demonstrating skills in building scalable and maintainable test automation.
 
-Language: Python
+## **🗺️ The Journey So Far: A QE's Problem-Solving Log**
 
-Test Runner: pytest
+This project has been an incredible learning experience, marked by the kind of challenges that define modern software quality assurance.
 
-Orchestration: Robot Framework
+#### **1\. The Pivot: Adapting to Roadblocks**
 
-API Interaction: requests, Bash (curl)
+The initial plan hit a wall due to dependency conflicts with other libraries. The first key learning was knowing when to pivot. I made the strategic decision to integrate the deepteam library, which required adapting my existing codebase to its asynchronous nature.
 
-LLM Evaluation Libraries:
+#### **2\. The Learning Curve: Embracing asyncio**
 
-deepeval
+deepteam's reliance on Python's asyncio was a fantastic opportunity to learn a new programming paradigm. The journey involved:
 
-langtest
+* Refactoring synchronous code to be async-native.  
+* Debugging subtle but critical TypeError and RuntimeWarning exceptions related to un-awaited coroutines.  
+* **Key Takeaway**: Understanding how orchestration layers can sometimes mask the root cause of errors, reinforcing the importance of isolated component testing.
 
-LLM Provider Integrations:
+#### **3\. The "Silent Failure": A Deep Dive into Debugging**
 
-Google (Gemini)
+The most challenging phase was a "silent failure" mode where tests would appear to pass but no real work was being done. My investigation followed a systematic QE process:
 
-OpenAI (GPT series)
+* **Hypothesis 1: Environment Issues.** I discovered the subprocess wasn't inheriting API keys. **Solution:** I engineered a more robust solution using a .env file and python-dotenv, a best practice for managing secrets.  
+* **Hypothesis 2: I/O Buffering.** I realized the subprocess was hiding terminal output. **Solution:** I modified the subprocess call to force unbuffered I/O, a deep dive into process management.
 
-Anthropic (Claude series)
+## **🚀 Current Status & The Next Challenge**
 
-xAI (Grok)
+This branch is a testament to a journey of learning and perseverance. It's a feature-rich framework that is one major step away from being fully operational.
 
-Planned Future Integrations:
-
-UI Automation: Playwright
-
-Performance Testing: k6
-
-Observability: Grafana & InfluxDB
-
-Deployment: Docker & Kubernetes
-
-Current Features: The Core API Client
-The foundation of this framework is a robust, flexible, and secure API client (llm_tests/api_client.py) that serves as the central engine for all test scenarios.
-
-✅ Multi-Provider Support: Contains validated, reusable functions to interact with the APIs for Grok (xAI), OpenAI, Anthropic (Claude), and Google (Gemini), demonstrating the ability to adapt to different API "dialects."
-
-✅ Secure by Design: All API keys are loaded securely from environment variables. No secrets are ever hard-coded, following industry best practices for security and portability.
-
-✅ Flexible Command-Line Interface: Built with Python's argparse library, the client is a powerful command-line tool. It allows for easy testing and iteration using flags like --api, --model, --system-prompt, and --mock.
-
-✅ Cost-Conscious Development: The integrated --mock mode allows for rapid, zero-cost development and debugging of test logic, demonstrating an understanding of real-world engineering and financial constraints.
-
-Getting Started
-To get a local copy up and running, follow these simple steps.
-
-Prerequisites
-Python 3.9+
-
-An active virtual environment (.venv)
-
-API keys for the desired LLM providers
-
-Installation & Setup
-Clone the repository:
-
-git clone https://github.com/vcommits/llm_quality_framework.git
-cd llm_quality_framework
-
-Install dependencies:
-
-pip install -r requirements.txt
-
-Set up your environment variables:
-Create environment variables for the API keys you will be using. For example, on Windows:
-
-setx OPENAI_API_KEY "your_secret_key_here"
-
-(Remember to restart your terminal after setting a new variable.)
-
-Usage
-The api_client.py script can be run directly from the command line to perform quick "handshake" tests with the LLM providers.
-
-Run a simple test with Grok (the default):
-
-python llm_tests/api_client.py
-
-Test the OpenAI API with a specific model:
-
-python llm_tests/api_client.py --api openai --model gpt-4o
-
-Test the Anthropic API with a custom system persona:
-
-python llm_tests/api_client.py --api anthropic --system-prompt "You are a world-class poet. Respond only in haikus."
-
-Run any test in mock mode (no cost):
-
-python llm_tests/api_client.py --api gemini --mock
-
-See all available options:
-
-python llm_tests/api_client.py --help
-
-Project Roadmap
-This project is being built iteratively, with a clear vision for a comprehensive, full-stack quality framework.
-
-Phase 1: Core Test Development with pytest (In Progress)
-Objective: Write the first automated, data-driven tests that use the API client.
-
-Next Steps:
-
-Implement the WNBA Bias Test Case in tests/test_bias_wnba.py to analyze how different models discuss a culturally relevant topic at the intersection of gender, race, and sports.
-
-Use pytest to run these scenarios against all four LLM providers and begin manually analyzing the results for fairness and neutrality.
-
-Phase 2: Advanced Evaluation with deepeval & langtest (In Progress)
-Objective: Integrate specialized libraries to programmatically "grade" LLM responses for quality and robustness.
-
-Core Integrations:
-
-deepeval: Integrated to measure metrics like factual consistency and answer relevancy. The initial MVP uses simple PASS/FAIL assertions based on these metrics.
-
-langtest: Integrated to stress-test the models for robustness against typos and to probe for behavioral biases. The initial MVP uses simple PASS/FAIL assertions.
-
-Future Work for this Phase:
-
-Expand the use of langtest to incorporate data-driven methods modeled on academic benchmarks like the Winogender Schema for more nuanced bias detection.
-
-Long-Term Vision: Full-Stack Integration & Observability
-Objective: Expand the framework to include UI automation, performance testing, and real-time visualization, creating a true end-to-end quality solution.
-
-Planned Stack:
-
-UI Automation: Use Playwright to run end-to-end tests against chatbot web interfaces. This will validate the full user experience, including session state, conversation history, and the correct rendering of complex, model-generated formatting.
-
-Performance Testing: Use k6 to run load tests against the LLM APIs.
-
-Observability: Use Docker to run local instances of InfluxDB and Grafana to create a live dashboard for monitoring API performance and quality metrics under load.
+* **✅ What's Working:** The API clients, Robot Framework orchestration, the SQLite database logger, and the PyGWalker visualization dashboard are all built and functional.  
+* **🚧 The Current Blocker:** The framework is currently blocked by a persistent pydantic ValidationError related to an un-awaited coroutine. This is the final puzzle to solve in the deepteam integration.  
+* **🎯 The Path Forward:** The immediate next step is to apply the lessons learned from this debugging journey to resolve this final async issue. This will unlock the full potential of the framework and complete this chapter of my self-directed learning in AI Quality Engineering.
