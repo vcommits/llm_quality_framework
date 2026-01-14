@@ -2,7 +2,9 @@
 import pytest
 import os
 import sys
-from phoenix.trace.langchain import LangChainInstrumentor
+# Updated imports for Phoenix/OpenInference
+from phoenix.otel import register
+from openinference.instrumentation.langchain import LangChainInstrumentor
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from llm_tests.providers import ProviderFactory
@@ -25,7 +27,9 @@ def config(request):
 @pytest.fixture(scope="session", autouse=True)
 def setup_arize_phoenix():
     print("\n🚀 Starting Arize Phoenix Tracing...")
-    LangChainInstrumentor().instrument()
+    # Updated instrumentation logic
+    tracer_provider = register()
+    LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
     yield
 
 @pytest.fixture

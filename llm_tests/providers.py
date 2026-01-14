@@ -76,7 +76,7 @@ class ProviderFactory:
         },
         'anthropic': {
             'lite': 'claude-3-haiku-20240307',
-            'mid': 'claude-3-5-sonnet-20240620',
+            'mid': 'claude-3.5-sonnet-20240620', # Fixed: Changed 3-5 to 3.5
             'full': 'claude-3-opus-20240229'
         },
         'gemini': {

@@ -126,3 +126,22 @@ async def test_end_to_end_flow(mock_provider, db_manager):
     # Verify file exists
     files = os.listdir(db_manager.results_dir)
     assert len(files) > 0
+
+def test_save_to_real_results():
+    """
+    Explicitly saves a record to the real 'Results' directory
+    so that view_results.py can display it.
+    """
+    # Initialize DatabaseManager without arguments to use the default 'Results' dir
+    real_db_manager = DatabaseManager()
+    
+    real_db_manager.save_response(
+        test_case_id="manual-test-001",
+        provider="system",
+        model="test-model",
+        model_tier="test",
+        test_type="manual_verification",
+        prompt="This is a test prompt to verify the results viewer.",
+        response={"status": "success", "message": "This record should appear in view_results.py"},
+        mock_mode=True
+    )
