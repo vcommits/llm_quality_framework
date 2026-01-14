@@ -88,35 +88,110 @@ setx OPENAI_API_KEY "your_secret_key_here"
 
 (Remember to restart your terminal after setting a new variable.)
 
-Usage
-The api_client.py script can be run directly from the command line to perform quick "handshake" tests with the LLM providers.
+## Command-Line Usage
 
-Run a simple test with Grok (the default):
+The `llm_tests/api_client.py` script is a powerful command-line tool for interacting directly with the supported LLM providers. All commands should be run from the root directory of the project (`.../llm_quality_framework`).
 
-python llm_tests/api_client.py
+### Core Command Structure
+
+The basic structure of the command is:
+
+```bash
+python llm_tests/api_client.py [FLAGS]
+```
+
+### Available Flags
+
+You can combine these flags to control the behavior of the script.
+
+| Flag | Description | Values | Default |
+| :--- | :--- | :--- | :--- |
+| `--api` | Selects the LLM provider to test. | `grok`, `openai`, `anthropic`, `gemini`, `all` | `grok` |
+| `--tier` | Selects the model tier (a predefined level of model capability and cost). | `lite`, `mid`, `full` | `lite` |
+| `--model` | Overrides the tier selection with a specific model ID. | e.g., `grok-4`, `gpt-4o`, `claude-3-opus-20240229` | `None` |
+| `--prompt` | The main question or instruction to send to the LLM. | Any string. Enclose in quotes if it contains spaces. | `"Explain what a unit test is in one sentence."` |
+| `--system-prompt` | Sets a custom persona or instruction for the AI to follow. | Any string. Enclose in quotes if it contains spaces. | `None` |
+| `--mock` | Runs the script in "mock mode" to return a fake response without making a real API call. | N/A (flag presence enables it) | `False` |
+| `--help` | Displays a helpful menu that lists all available flags and their descriptions. | N/A | N/A |
+
+### Example Commands
+
+Here are some copy-pasteable examples for common scenarios.
+
+**1. Basic Handshake Tests**
+
+These examples use default settings for a quick, low-cost test.
+
+*   **Test Grok (default API, lite tier):**
+    ```bash
+    python llm_tests/api_client.py
+    ```
+*   **Test OpenAI (lite tier):**
+    ```bash
+    python llm_tests/api_client.py --api openai
+    ```
+*   **Test all providers (lite tier):**
+    ```bash
+    python llm_tests/api_client.py --api all
+    ```
+
+**2. Using Different Model Tiers**
+
+Test different levels of model capability.
+
+*   **Test Anthropic's mid-tier model:**
+    ```bash
+    python llm_tests/api_client.py --api anthropic --tier mid
+    ```
+*   **Test all providers using their most powerful "full" tier models:**
+    ```bash
+    python llm_tests/api_client.py --api all --tier full
+    ```
+
+**3. Specifying a Model ID**
+
+Override tiers to use a specific model version.
+
+*   **Test with OpenAI's `gpt-4o`:**
+    ```bash
+    python llm_tests/api_client.py --api openai --model gpt-4o
+    ```
+*   **Test with Anthropic's `claude-3-opus-20240229`:**
+    ```bash
+    python llm_tests/api_client.py --api anthropic --model claude-3-opus-20240229
+    ```
+
+**4. Sending Custom Prompts**
+
+Provide your own questions and system instructions.
+
+*   **Send a custom prompt to Gemini:**
+    ```bash
+    python llm_tests/api_client.py --api gemini --prompt "What are the key differences between Python lists and tuples?"
+    ```
+*   **Use a system prompt to define a persona:**
+    ```bash
+    python llm_tests/api_client.py --api openai --system-prompt "You are a helpful assistant who speaks like a pirate." --prompt "How do I set up a Python virtual environment?"
+    ```
+
+**5. Mock Mode for Development**
+
+Run tests without making real (and costly) API calls.
+
+*   **Run a mock test for any API:**
+    ```bash
+    python llm_tests/api_client.py --api gemini --mock --prompt "This is just a test."
+    ```
+
+**6. Getting Help**
+
+*   **See all available options from the command line:**
+    ```bash
+    python llm_tests/api_client.py --help
+    ```
 
 
-Test the OpenAI API with a specific model:
-
-python llm_tests/api_client.py --api openai --model gpt-4o
-
-
-Test the Anthropic API with a custom system persona:
-
-python llm_tests/api_client.py --api anthropic --system-prompt "You are a world-class poet. Respond only in haikus."
-
-
-Run any test in mock mode (no cost):
-
-python llm_tests/api_client.py --api gemini --mock
-
-
-See all available options:
-
-python llm_tests/api_client.py --help
-
-
-Project Roadmap
+## Project Roadmap
 This project is being built iteratively, with a clear vision for a comprehensive, full-stack quality framework.
 
 Phase 1: Core Test Development with pytest (In Progress)

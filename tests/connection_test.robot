@@ -1,10 +1,11 @@
 *** Settings ***
 Documentation     A simple test to verify the connection to our Python keyword library.
-Library           llm_tests.LLMKeywords.py
+Library           tests.LLMKeywords
 
 *** Test Cases ***
 Should Be Able To Call A Custom Python Keyword
-    ${response}=    Call Grok API With Mock    This is a simple test prompt.
+    [Documentation]    Calls a keyword from the local library with mock mode enabled.
+
+    ${response}=    Call Grok API    This is a simple test prompt.    mock_mode=${True}
     Log To Console    \nKeyword Response: ${response}
     Should Not Be Empty    ${response}
-

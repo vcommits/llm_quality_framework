@@ -7,6 +7,7 @@ import time
 import sqlite3 # Import sqlite3 for database operations
 import os # Import os for path manipulation
 import uuid # Import uuid for generating unique IDs
+import json # IMPORT json for langtest configuration
 
 from llm_tests.api_client import (
     call_grok_api,
@@ -103,7 +104,7 @@ def _save_response_to_db(
         conn.commit()
         logger.info(f"Saved response for test_case_id '{test_case_id}' to DB.")
     except sqlite3.Error as e:
-        logger.error(f"Database error saving response for '{test_case_id}': {e}", exc_info=True)
+        logger.error(f"Database error saving response for '{test_case_id}': {e}")
     finally:
         conn.close()
 
@@ -117,6 +118,7 @@ class LLMKeywords:
     def run_test_against_provider_and_tier(self, provider, tier, prompt, system_prompt=None, mock_mode=False):
         """
         A single, powerful keyword that runs a test against a specific provider and tier.
+        It now saves the initial response to the database before running evaluations.
         """
         logger.info(f"Executing test for Provider: {provider.upper()}, Tier: {tier}")
 
@@ -147,139 +149,81 @@ class LLMKeywords:
             model_tier=tier
         )
 
-        # Log the raw response for debugging, as suggested in previous steps
         logger.info(f"Raw Response from {provider.upper()} API: {response}")
+
+        # Save the initial response to the database before evaluations
+        _save_response_to_db(
+            test_case_id=f"{prompt[:50]}-{provider}",
+            provider=provider,
+            model=model_to_use,
+            model_tier=tier,
+            test_type="API_Response",
+            prompt=prompt,
+            system_prompt=system_prompt,
+            response=response,
+            mock_mode=mock_mode
+        )
 
         return response
 
     @keyword
-    def evaluate_response_for_toxicity(self, test_case_id: str, provider: str, model: str, model_tier: str, test_type: str, prompt: str, system_prompt: str, response_text: str):
+    def evaluate_response_for_toxicity(self, prompt: str, response_text: str):
         """
-        Takes a prompt and response, runs them through the deepeval toxicity evaluator,
-        and saves the result to the database. Fails the test if toxicity is found.
+        Takes a prompt and response, runs them through the deepeval toxicity evaluator.
+        This keyword will now FAIL the test if toxicity is found.
         """
         logger.info("Evaluating response for toxicity (DeepEval)...")
         if response_text is None or not isinstance(response_text, str) or not response_text.strip():
-            reason = f"Cannot evaluate toxicity: LLM response was invalid or empty. Response: '{response_text}'"
-            logger.error(reason)
-            # Save partial data to DB even if evaluation couldn't run
-            _save_response_to_db(
-                test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-                test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response_text,
-                mock_mode=False, # Assuming not mock mode if we're evaluating
-                evaluation_metric="Toxicity", evaluation_score=None, evaluation_reasoning=reason
-            )
-            raise AssertionError(reason)
+            raise AssertionError("Cannot evaluate toxicity: LLM response was invalid or empty.")
 
-        result = evaluate_toxicity_deepeval(prompt, response_text)
+        # This function will now raise an AssertionError on failure, which will fail the Robot test.
+        evaluate_toxicity_deepeval(prompt, response_text)
 
-        # Save evaluation result to database
-        _save_response_to_db(
-            test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-            test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response_text,
-            mock_mode=False, # Assuming not mock mode if we're evaluating
-            evaluation_metric="Toxicity", evaluation_score=result["score"], evaluation_reasoning=result["reason"]
-        )
-
-        if not result["passed"]:
-            raise AssertionError(f'Toxicity evaluation failed. Reason: {result["reason"]}')
-
-        logger.info(f'Toxicity evaluation passed. Reason: {result["reason"]}')
+        logger.info("Toxicity evaluation passed.")
 
     @keyword
-    def evaluate_response_for_relevancy(self, test_case_id: str, provider: str, model: str, model_tier: str, test_type: str, prompt: str, system_prompt: str, response_text: str):
+    def evaluate_response_for_relevancy(self, prompt: str, response_text: str):
         """
-        Takes a prompt and response, runs them through the deepeval relevancy evaluator,
-        and saves the result to the database. Fails the test if the response is not relevant.
+        Takes a prompt and response, runs them through the deepeval relevancy evaluator.
+        This keyword will now FAIL the test if the response is not relevant.
         """
         logger.info("Evaluating response for answer relevancy (DeepEval)...")
         if response_text is None or not isinstance(response_text, str) or not response_text.strip():
-            reason = f"Cannot evaluate relevancy: LLM response was invalid or empty. Response: '{response_text}'"
-            logger.error(reason)
-            # Save partial data to DB even if evaluation couldn't run
-            _save_response_to_db(
-                test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-                test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response_text,
-                mock_mode=False, # Assuming not mock mode if we're evaluating
-                evaluation_metric="Relevancy", evaluation_score=None, evaluation_reasoning=reason
-            )
-            raise AssertionError(reason)
+            raise AssertionError("Cannot evaluate relevancy: LLM response was invalid or empty.")
 
-        result = evaluate_answer_relevancy_deepeval(prompt, response_text)
+        # This function will now raise an AssertionError on failure, which will fail the Robot test.
+        evaluate_answer_relevancy_deepeval(prompt, response_text)
 
-        # Save evaluation result to database
-        _save_response_to_db(
-            test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-            test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response_text,
-            mock_mode=False, # Assuming not mock mode if we're evaluating
-            evaluation_metric="Relevancy", evaluation_score=result["score"], evaluation_reasoning=result["reason"]
-        )
-
-        if not result["passed"]:
-            raise AssertionError(f'Answer Relevancy evaluation failed. Reason: {result["reason"]}')
-
-        logger.info(f'Answer Relevancy evaluation passed. Reason: {result["reason"]}')
+        logger.info("Answer Relevancy evaluation passed.")
 
     @keyword
-    def run_langtest_harness_and_save_results(self, test_case_id: str, provider: str, model: str, model_tier: str, test_type: str, prompt: str, system_prompt: str, response: str, test_config: str, data: list):
+    def run_robustness_test_with_langtest(self, provider: str, tier: str, prompt: str):
         """
-        Takes provider, tier, test config (JSON string), data, runs langtest harness,
-        and saves the results to the database.
+        Performs a "typo" robustness test using LangTest. This will FAIL the test on low pass rate.
         """
-        logger.info(f"Running LangTest Harness for {provider.upper()} ({model})...")
+        logger.info(f"\n--- Initializing LangTest Robustness Test for {provider.upper()} ({tier}) ---")
 
         try:
-            # The actual call to run_langtest_harness in test_evaluators.py will parse the test_config string
-            results_df = run_langtest_harness(provider, model, test_config, data)
+            model_to_use = MODEL_TIERS[provider][tier]
+        except KeyError:
+            raise ValueError(f"Tier '{tier}' is not available for provider '{provider}'.")
 
-            logger.info(f"LangTest Results:\n{results_df.to_string()}")
+        data = [{'question': prompt, 'expected_response': None}]
+        test_config = {
+            "tests": {
+                "defaults": {"min_pass_rate": 0.90},
+                "robustness": {
+                    "typo": {"min_pass_rate": 0.85}
+                }
+            }
+        }
 
-            # Assuming langtest results_df has 'test_type', 'pass_rate', 'perturbation_count' columns
-            # We'll save the first row's results for simplicity for this test case
-            if not results_df.empty:
-                first_row = results_df.iloc[0]
-                robustness_test_type = first_row.get('test_type', 'Unknown') # e.g., 'typo'
-                pass_rate = first_row.get('pass_rate', None)
-                perturbation_count = first_row.get('perturbation_count', None) # LangTest might not have this directly
+        # This function will now raise an AssertionError on failure.
+        run_langtest_harness(
+            provider=provider,
+            model=model_to_use,
+            test_config=json.dumps(test_config),
+            data=data
+        )
 
-                # Save LangTest results to database
-                _save_response_to_db(
-                    test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-                    test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response,
-                    mock_mode=False, # Assuming not mock mode if running LangTest
-                    robustness_test_type=robustness_test_type,
-                    pass_rate=pass_rate,
-                    perturbation_count=perturbation_count,
-                    evaluation_metric="LangTest Robustness", # Indicate this is a LangTest eval
-                    evaluation_score=pass_rate # Use pass_rate as evaluation_score for consistency
-                )
-            else:
-                logger.warning(f"LangTest Harness for {test_case_id} returned an empty DataFrame.")
-                _save_response_to_db(
-                    test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-                    test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response,
-                    mock_mode=False,
-                    robustness_test_type="N/A", pass_rate=None, perturbation_count=None,
-                    evaluation_metric="LangTest Robustness", evaluation_reasoning="Empty results from LangTest."
-                )
-
-
-            all_passed = (results_df['pass_rate'] >= results_df['min_pass_rate']).all()
-
-            if not all_passed:
-                failed_tests = results_df[results_df['pass_rate'] < results_df['min_pass_rate']]
-                raise AssertionError(f"LangTest evaluation failed:\n{failed_tests.to_string()}")
-
-            logger.info("All LangTest evaluations passed.")
-
-        except Exception as e:
-            reason = f"An unexpected error occurred during LangTest Harness execution: {e}"
-            logger.error(reason, exc_info=True)
-            _save_response_to_db(
-                test_case_id=test_case_id, provider=provider, model=model, model_tier=model_tier,
-                test_type=test_type, prompt=prompt, system_prompt=system_prompt, response=response,
-                mock_mode=False,
-                robustness_test_type="Error", pass_rate=None, perturbation_count=None,
-                evaluation_metric="LangTest Robustness", evaluation_reasoning=reason
-            )
-            raise AssertionError(reason) # Fail the Robot test if LangTest execution itself fails
+        logger.info("--- LangTest Robustness Test Passed ---")

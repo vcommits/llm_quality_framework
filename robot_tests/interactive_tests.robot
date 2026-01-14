@@ -8,44 +8,80 @@ Suite Teardown    Log To Console    --- Interactive Test Run Complete ---
 # These variables are DESIGNED to be overridden from the command line.
 ${PROVIDER}       grok
 ${TIER}           lite
-${SYSTEM_PROMPT}    ${None}
+${MODEL}          ${None} # Allow overriding the model directly
+${SYSTEM_PROMPT}  ${None}
 ${PROMPT}         Who was the first WNBA player to dunk in a game?
 ${MOCK_MODE}      ${False}
+${TEST_CASE_ID}   TC-Interactive-001
+${TEST_TYPE}      Ad-Hoc
 
 # --- NEW: Control LangTest from the command line ---
-# This variable can be overridden with -v LANGTEST_TYPE:security or -v LANGTEST_TYPE:fairness etc.
-${LANGTEST_TYPE}  robustness
-
+${RUN_LANGTEST}   ${False}
 
 *** Test Cases ***
 Execute Ad-Hoc LLM Test
     [Documentation]    This single test case is a template for command-line execution.
 
-    Run Test For Provider And Tier    ${PROVIDER}    ${TIER}
-
-*** Keywords ***
-Run Test For Provider And Tier
-    [Arguments]    ${provider_arg}    ${tier_arg}
-    [Documentation]    This keyword calls the correct API and evaluates the response.
-
-    ${response}=    Run Test Against Provider And Tier
-    ...    provider=${provider_arg}
-    ...    tier=${tier_arg}
+    # Step 1: Run the core API test to get a response
+    ${response_text}=    Run Test Against Provider And Tier
+    ...    provider=${PROVIDER}
+    ...    tier=${TIER}
     ...    prompt=${PROMPT}
     ...    system_prompt=${SYSTEM_PROMPT}
     ...    mock_mode=${MOCK_MODE}
 
-    Should Not Be Empty    ${response}
-    Log To Console    Response from ${provider_arg.upper()} (${tier_arg}): ${response}
+    Should Not Be Empty    ${response_text}
+    Log To Console    Response from ${PROVIDER.upper()} (${TIER}): ${response_text}
 
-    # --- Run DeepEval evaluations on the single response ---
-    Evaluate Response For Toxicity       prompt=${PROMPT}    response_text=${response}
-    Evaluate Response For Relevancy    prompt=${PROMPT}    response_text=${response}
+    # Step 2: Run DeepEval evaluations only if not in mock mode
+    Run Keyword If    not ${MOCK_MODE}
+    ...    Run And Save DeepEval Evaluations
+    ...    ${response_text}
 
-    # --- Run LangTest evaluation on the model's behavior ---
-    Run Keyword If    not ${MOCK_MODE}    Evaluate Model With Langtest
-    ...    provider=${provider_arg}
-    ...    tier=${tier_arg}
+    # Step 3: Run LangTest evaluation only if not in mock mode AND explicitly enabled
+    Run Keyword If    not ${MOCK_MODE} and ${RUN_LANGTEST}
+    ...    Run Robustness Test With Langtest
+    ...    test_case_id=${TEST_CASE_ID}
+    ...    provider=${PROVIDER}
+    ...    tier=${TIER}
     ...    prompt=${PROMPT}
-    ...    test_type=${LANGTEST_TYPE}
 
+*** Keywords ***
+Run And Save DeepEval Evaluations
+    [Arguments]    ${response_text}
+    [Documentation]    A wrapper keyword to run all DeepEval evaluations and save their results.
+
+    # --- Run DeepEval evaluations and save each result ---
+    ${toxicity_result}=    Evaluate Response For Toxicity
+    ...    prompt=${PROMPT}
+    ...    response_text=${response_text}
+
+    Save Evaluation Result
+    ...    test_case_id=${TEST_CASE_ID}
+    ...    provider=${PROVIDER}
+    ...    model=${MODEL}
+    ...    model_tier=${TIER}
+    ...    test_type=${TEST_TYPE}
+    ...    prompt=${PROMPT}
+    ...    system_prompt=${SYSTEM_PROMPT}
+    ...    response=${response_text}
+    ...    mock_mode=${MOCK_MODE}
+    ...    evaluation_result=${toxicity_result}
+    ...    metric_name=Toxicity
+
+    ${relevancy_result}=    Evaluate Response For Relevancy
+    ...    prompt=${PROMPT}
+    ...    response_text=${response_text}
+
+    Save Evaluation Result
+    ...    test_case_id=${TEST_CASE_ID}
+    ...    provider=${PROVIDER}
+    ...    model=${MODEL}
+    ...    model_tier=${TIER}
+    ...    test_type=${TEST_TYPE}
+    ...    prompt=${PROMPT}
+    ...    system_prompt=${SYSTEM_PROMPT}
+    ...    response=${response_text}
+    ...    mock_mode=${MOCK_MODE}
+    ...    evaluation_result=${relevancy_result}
+    ...    metric_name=Relevancy
