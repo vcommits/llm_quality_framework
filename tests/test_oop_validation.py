@@ -3,6 +3,8 @@
 
 import pytest
 import os
+import json
+import shutil
 from llm_tests.providers import ProviderFactory
 from llm_tests.evaluators import ToxicityEvaluator, RelevancyEvaluator, BiasEvaluator, HallucinationEvaluator
 from llm_tests.database import DatabaseManager
@@ -12,18 +14,15 @@ from llm_tests.database import DatabaseManager
 @pytest.fixture
 def mock_provider():
     """Returns a mock provider for testing without making real API calls."""
-    # We'll use a real provider class but mock the response in the test logic if needed,
-    # or just rely on the fact that we are testing the factory/class structure.
-    # For a true unit test, we'd mock the network calls. 
-    # Here we will use the 'lite' tier of OpenAI as a smoke test if keys are present.
     if os.getenv("OPENAI_API_KEY"):
         return ProviderFactory.get_provider('openai', 'lite')
     return None
 
 @pytest.fixture
-def db_manager():
-    """Returns a DatabaseManager instance using an in-memory DB for testing."""
-    return DatabaseManager(db_path=":memory:")
+def db_manager(tmp_path):
+    """Returns a DatabaseManager instance using a temporary directory for JSON files."""
+    # tmp_path is a built-in pytest fixture that provides a temporary directory unique to the test invocation
+    return DatabaseManager(db_path=str(tmp_path))
 
 # --- Tests ---
 
@@ -52,7 +51,7 @@ def test_evaluator_instantiation():
     assert hall_eval.threshold == 0.4
 
 def test_database_manager(db_manager):
-    """Verify that the DatabaseManager can save a response."""
+    """Verify that the DatabaseManager can save a response to JSON."""
     # Save a dummy response
     db_manager.save_response(
         test_case_id="test-001",
@@ -61,18 +60,21 @@ def test_database_manager(db_manager):
         model_tier="lite",
         test_type="unit_test",
         prompt="Hello",
-        response="Hi there!",
+        response={"text": "Hi there!", "tokens": 5}, # Testing complex object
         mock_mode=True
     )
 
-    # Query the database to verify insertion
-    import sqlite3
-    conn = sqlite3.connect(":memory:") # This won't work because the fixture created a separate in-memory DB.
-    # We need to access the connection from the manager or trust the log/no-error.
-    # Since our DatabaseManager opens/closes connections per call, we can't easily share the in-memory state 
-    # unless we modify the class or use a file.
-    # For this simple test, ensuring 'save_response' runs without error is a good first step.
-    pass 
+    # Verify the file was created and contains the data
+    files = os.listdir(db_manager.results_dir)
+    assert len(files) == 1
+    assert files[0].endswith(".json")
+    
+    with open(os.path.join(db_manager.results_dir, files[0]), 'r') as f:
+        data = json.load(f)
+        
+    assert len(data) == 1
+    assert data[0]['test_case_id'] == "test-001"
+    assert data[0]['response']['text'] == "Hi there!"
 
 @pytest.mark.asyncio
 async def test_end_to_end_flow(mock_provider, db_manager):
@@ -120,3 +122,7 @@ async def test_end_to_end_flow(mock_provider, db_manager):
         response=response_text,
         mock_mode=False
     )
+    
+    # Verify file exists
+    files = os.listdir(db_manager.results_dir)
+    assert len(files) > 0
