@@ -7,6 +7,7 @@ import yaml
 import base64
 import pandas as pd
 import altair as alt
+from datetime import datetime
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -31,6 +32,8 @@ except ImportError as e:
     st.stop()
 
 PROMPTS_FILE = "prompts.yaml"
+SESSIONS_DIR = "saved_sessions"
+os.makedirs(SESSIONS_DIR, exist_ok=True)
 
 
 # --- 2. HELPER FUNCTIONS ---
@@ -44,6 +47,22 @@ def save_prompt(name, text):
     data[name] = text
     with open(PROMPTS_FILE, "w") as f: yaml.dump(data, f)
     st.toast(f"✅ Saved '{name}'")
+
+
+def save_session_state(messages):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = os.path.join(SESSIONS_DIR, f"session_{timestamp}.json")
+    with open(filename, "w") as f:
+        json.dump(messages, f, indent=2)
+    st.toast(f"💾 Session saved: {filename}")
+
+
+def load_session_state(filename):
+    filepath = os.path.join(SESSIONS_DIR, filename)
+    if os.path.exists(filepath):
+        with open(filepath, "r") as f:
+            return json.load(f)
+    return []
 
 
 def encode_media(file):
@@ -70,7 +89,7 @@ def play_fight_sound():
 # --- 3. SIDEBAR ---
 with st.sidebar:
     st.title("💜 Command Center")
-    st.caption("Purple Team Framework v2.3")
+    st.caption("Purple Team Framework v2.4")
     st.markdown("---")
 
     st.header("⚙️ Chassis")
@@ -118,12 +137,33 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # --- SESSION MANAGEMENT (NEW) ---
+    st.header("💾 Session State")
+    if st.button("Save Current Session"):
+        if "messages" in st.session_state and st.session_state.messages:
+            save_session_state(st.session_state.messages)
+        else:
+            st.warning("No messages to save.")
+
+    saved_sessions = [f for f in os.listdir(SESSIONS_DIR) if f.endswith(".json")]
+    saved_sessions.sort(reverse=True)  # Newest first
+
+    if saved_sessions:
+        selected_session = st.selectbox("Load Session", ["Select..."] + saved_sessions)
+        if selected_session != "Select...":
+            if st.button("📂 Load"):
+                loaded_msgs = load_session_state(selected_session)
+                st.session_state.messages = loaded_msgs
+                st.toast(f"Loaded {len(loaded_msgs)} messages.")
+                st.rerun()
+
+    st.markdown("---")
+
     st.header("📚 Attack Library")
     saved_prompts = load_prompts()
     if saved_prompts:
         selected_p_name = st.selectbox("Load Payload", list(saved_prompts.keys()))
 
-        # --- NEW: PREVIEW FEATURE ---
         with st.expander("👁️ Preview Content"):
             st.code(saved_prompts[selected_p_name], language="text")
 
@@ -187,6 +227,13 @@ with tab_play:
                             content = [{"type": "text", "text": active_prompt},
                                        {"type": "image_url",
                                         "image_url": {"url": f"data:image/jpeg;base64,{encode_media(uploaded_file)}"}}]
+
+                        # Add history to context if resuming a session
+                        # Note: Simple append for this demo; advanced logic would serialize history into LangChain Messages
+                        # For now, we rely on the single-turn prompt + system prompt,
+                        # but users can manually copy-paste context if needed.
+                        # To enable full multi-turn memory with the API, we'd need to convert st.session_state.messages
+                        # into a list of HumanMessage/AIMessage objects here.
 
                         response = llm.invoke(
                             [SystemMessage(content=final_system_prompt), HumanMessage(content=content)])
