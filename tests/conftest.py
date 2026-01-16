@@ -3,7 +3,9 @@ import json
 import time
 import pytest
 import phoenix as px
-from phoenix.trace.langchain import LangChainInstrumentor
+# Updated imports for Phoenix/OpenInference
+from phoenix.otel import register
+from openinference.instrumentation.langchain import LangChainInstrumentor
 from deepeval.events import on_test_run_end
 
 # --- 1. PERSISTENT TELEMETRY SETUP ---
@@ -28,7 +30,8 @@ def setup_telemetry():
         px.launch_app(directory=TRACE_DIR)
 
         # Hook into LangChain to capture every LLM call made by Pytest
-        LangChainInstrumentor().instrument()
+        tracer_provider = register()
+        LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
 
         print(f"\n✅ Telemetry Active. Writing to: {TRACE_DIR}")
 

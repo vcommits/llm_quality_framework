@@ -159,9 +159,10 @@ class ProviderFactory:
     }
 
     @staticmethod
-    def get_provider(provider_name: str, tier: str = 'lite', **kwargs) -> LLMProvider:
+    def get_provider(provider_name: str, tier: str = 'lite', model_name_override: str = None, **kwargs) -> LLMProvider:
         """
         Factory method to instantiate the correct provider class.
+        Accepts 'model_name_override' to bypass tiers and use raw model IDs (from Harvester).
         """
         provider_name = provider_name.lower()
 
@@ -169,17 +170,21 @@ class ProviderFactory:
         if provider_name not in ProviderFactory.MODEL_TIERS:
             raise ValueError(f"Provider '{provider_name}' is not supported.")
 
-        tiers = ProviderFactory.MODEL_TIERS[provider_name]
-        if tier not in tiers:
-            # Fallback logic: If 'vision' is requested but not defined, try 'full'
-            if tier == 'vision' and 'full' in tiers:
-                print(f"⚠️ Warning: Tier 'vision' not found for {provider_name}. Falling back to 'full'.")
-                tier = 'full'
-            else:
-                raise ValueError(
-                    f"Tier '{tier}' is not available for provider '{provider_name}'. Available: {list(tiers.keys())}")
-
-        model_name = tiers[tier]
+        if model_name_override:
+            # Bypass tier lookup if we have a raw ID
+            model_name = model_name_override
+        else:
+            # Standard Tier Logic
+            tiers = ProviderFactory.MODEL_TIERS[provider_name]
+            if tier not in tiers:
+                # Fallback logic: If 'vision' is requested but not defined, try 'full'
+                if tier == 'vision' and 'full' in tiers:
+                    print(f"⚠️ Warning: Tier 'vision' not found for {provider_name}. Falling back to 'full'.")
+                    tier = 'full'
+                else:
+                    raise ValueError(
+                        f"Tier '{tier}' is not available for provider '{provider_name}'. Available: {list(tiers.keys())}")
+            model_name = tiers[tier]
 
         # Dispatch
         if provider_name == 'openai':
