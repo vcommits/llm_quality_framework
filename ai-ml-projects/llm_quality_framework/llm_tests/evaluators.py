@@ -6,10 +6,10 @@ import os
 import logging
 from deepeval import assert_test
 from deepeval.metrics import (
-    AnswerRelevancyMetric,
-    ToxicityMetric,
-    BiasMetric,
-    HallucinationMetric,
+    AnswerRelevancyMetric, 
+    ToxicityMetric, 
+    BiasMetric, 
+    HallucinationMetric, 
     BaseMetric
 )
 from deepeval.test_case import LLMTestCase
@@ -39,7 +39,7 @@ class BaseEvaluator(ABC):
         """
         Polymorphic method to run the evaluation.
         Common logic for creating the test case and asserting is handled here.
-
+        
         Args:
             prompt: The input prompt.
             response_text: The actual output from the LLM.
@@ -48,10 +48,10 @@ class BaseEvaluator(ABC):
         logging.info(f"Running {self.__class__.__name__} for prompt: '{prompt[:50]}...'")
         
         metric = self._get_metric()
-
+        
         # Some metrics (like Hallucination) require context
         test_case = LLMTestCase(
-            input=prompt,
+            input=prompt, 
             actual_output=response_text,
             context=context
         )
@@ -79,7 +79,7 @@ class RelevancyEvaluator(BaseEvaluator):
 
 class BiasEvaluator(BaseEvaluator):
     """Evaluator for checking bias in responses."""
-
+    
     def __init__(self, threshold: float = 0.5):
         super().__init__(threshold)
 
@@ -91,7 +91,7 @@ class HallucinationEvaluator(BaseEvaluator):
     Evaluator for checking hallucinations in responses.
     Note: This metric typically requires 'context' to be passed to the evaluate method.
     """
-
+    
     def __init__(self, threshold: float = 0.5):
         super().__init__(threshold)
 

@@ -1,22 +1,81 @@
-# File: tests/conftest.py
-# Purpose: This special pytest file is used to define project-wide fixtures
-# and custom command-line options for your test suite.
-
+import os
+import json
+import time
 import pytest
+import phoenix as px
+# Updated imports for Phoenix/OpenInference
+from phoenix.otel import register
+from openinference.instrumentation.langchain import LangChainInstrumentor
+from deepeval.events import on_test_run_end
 
-def pytest_addoption(parser):
-    """
-    This function is a special hook that pytest uses to add custom command-line options.
-    We are adding a '--live-api' flag.
-    """
-    parser.addoption(
-        "--live-api", action="store_true", default=False, help="Run tests against the live APIs instead of mock mode."
-    )
+# --- 1. PERSISTENT TELEMETRY SETUP ---
 
-@pytest.fixture
-def live_api_mode(request):
+# Use the exact same path as start_telemetry.py
+TRACE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../phoenix_storage"))
+os.makedirs(TRACE_DIR, exist_ok=True)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_telemetry():
     """
-    This is a pytest 'fixture'. It reads the value of the command-line option
-    we just created and provides it to any test function that asks for it.
+    Initializes Arize Phoenix for the test session.
+    It writes to the shared 'phoenix_storage' folder so your Dashboard 
+    can see these test results in the 'Run over Run' history.
     """
-    return request.config.getoption("--live-api")
+    try:
+        # Launch Phoenix. 
+        # Note: If start_telemetry.py is already running on port 6006, 
+        # this will auto-bind to a random port (like 6007) but STILL write 
+        # to the correct TRACE_DIR database.
+        px.launch_app(directory=TRACE_DIR)
+
+        # Hook into LangChain to capture every LLM call made by Pytest
+        tracer_provider = register()
+        LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
+
+        print(f"\n✅ Telemetry Active. Writing to: {TRACE_DIR}")
+
+    except Exception as e:
+        print(f"\n⚠️ Telemetry Initialization Warning: {e}")
+        # We don't stop the tests, just warn
+
+
+# --- 2. DEEPEVAL DRIFT LOGGING ---
+
+def log_drift_score(test_case, metrics):
+    """
+    Custom hook to save DeepEval scores to a local JSON file
+    so the Dashboard can graph 'Drift' over time in Tab 3.
+    """
+    history_file = os.path.join(os.path.dirname(__file__), "../drift_history.json")
+
+    # Load existing history
+    if os.path.exists(history_file):
+        try:
+            with open(history_file, "r") as f:
+                history = json.load(f)
+        except json.JSONDecodeError:
+            history = []
+    else:
+        history = []
+
+    # Append new entry
+    for metric in metrics:
+        entry = {
+            "timestamp": time.time(),
+            "metric": metric.__class__.__name__,
+            "score": metric.score,
+            "passed": metric.is_successful(),
+            "input": getattr(test_case, 'input', 'N/A'),
+            "actual_output": getattr(test_case, 'actual_output', 'N/A')
+        }
+        history.append(entry)
+
+    # Save
+    with open(history_file, "w") as f:
+        json.dump(history, f, indent=2)
+
+# Hook DeepEval's lifecycle to our logger
+# Note: DeepEval's event system can be finicky; ensuring this runs requires
+# passing the metric objects correctly in your test files.
+# Alternatively, you can call log_drift_score() directly inside your test functions.
