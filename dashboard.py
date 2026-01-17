@@ -9,14 +9,9 @@ import pandas as pd
 import altair as alt
 from datetime import datetime
 from dotenv import load_dotenv
-
-# --- REMOVED MONKEY PATCH ---
-# We are now using ChatOpenAI for Together, so we don't need the complex Pydantic v1 patch.
-# This should restore stability for the 'together' client used in ModelHarvester.
-
 from langchain_core.messages import HumanMessage, SystemMessage
 
-# --- INSTRUMENTATION (CRITICAL FIX) ---
+# --- INSTRUMENTATION ---
 from phoenix.otel import register
 from openinference.instrumentation.langchain import LangChainInstrumentor
 
@@ -25,7 +20,7 @@ st.set_page_config(page_title="Purple Team Command Center", page_icon="💜", la
 load_dotenv()
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Instrument LangChain (New Method for Phoenix v4+)
+# Instrument LangChain
 try:
     tracer_provider = register()
     LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
@@ -42,6 +37,7 @@ except ImportError as e:
 PROMPTS_FILE = "prompts.yaml"
 SESSIONS_DIR = "saved_sessions"
 os.makedirs(SESSIONS_DIR, exist_ok=True)
+JOURNAL_FILE = "red_team_journal.json"
 
 
 # --- 2. HELPER FUNCTIONS ---
@@ -61,8 +57,6 @@ def save_session_state(messages):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(SESSIONS_DIR, f"session_{timestamp}.json")
     with open(filename, "w") as f:
-        # Convert objects to serializable format if necessary,
-        # but st.session_state.messages usually contains dicts/strings in this app context.
         json.dump(messages, f, indent=2)
     st.toast(f"💾 Session saved: {filename}")
 
@@ -73,6 +67,29 @@ def load_session_state(filename):
         with open(filepath, "r") as f:
             return json.load(f)
     return []
+
+
+# --- JOURNAL FUNCTIONS ---
+def load_journal():
+    if not os.path.exists(JOURNAL_FILE): return []
+    with open(JOURNAL_FILE, "r") as f: return json.load(f)
+
+
+def save_journal_entry(model, prompt, response, tags, notes):
+    import uuid
+    entry = {
+        "id": str(uuid.uuid4())[:8],
+        "timestamp": datetime.now().isoformat(),
+        "model": model,
+        "prompt": prompt,
+        "response": response,
+        "tags": tags,
+        "notes": notes
+    }
+    journal = load_journal()
+    journal.insert(0, entry)  # Newest first
+    with open(JOURNAL_FILE, "w") as f: json.dump(journal, f, indent=2)
+    st.toast(f"📖 Diary updated!")
 
 
 def encode_media(file):
@@ -99,7 +116,7 @@ def play_fight_sound():
 # --- 3. SIDEBAR ---
 with st.sidebar:
     st.title("💜 Command Center")
-    st.caption("Purple Team Framework v2.5")
+    st.caption("Purple Team Framework v2.9")
     st.markdown("---")
 
     st.header("⚙️ Chassis")
@@ -186,8 +203,8 @@ with st.sidebar:
         st.info("Library empty. Save prompts from Tab 1.")
 
 # --- 4. MAIN INTERFACE ---
-tab_play, tab_arena, tab_scan, tab_trace = st.tabs(
-    ["💬 Interactive Probe", "⚔️ Model Arena", "🤖 Automated Arsenal", "🔭 Telemetry"])
+tab_play, tab_arena, tab_scan, tab_trace, tab_journal = st.tabs(
+    ["💬 Interactive Probe", "⚔️ Model Arena", "🤖 Automated Arsenal", "🔭 Telemetry", "📖 Red Team Diary"])
 
 # === TAB 1: INTERACTIVE PROBE ===
 with tab_play:
@@ -253,14 +270,49 @@ with tab_play:
                         }
                         st.session_state.messages.append(
                             {"role": "assistant", "content": response.content, "payload": blob})
+
+                        # --- JOURNAL LOGGING (AUTO-DETECT LAST INTERACTION) ---
+                        st.session_state["last_interaction"] = {
+                            "model": selected_model_override if selected_model_override else f"{provider}:{tier}",
+                            "prompt": active_prompt,
+                            "response": response.content
+                        }
+
                     except Exception as e:
                         st.error(f"Error: {e}")
+
+    # --- JOURNAL WIDGET (UPDATED WITH CUSTOM TAGS) ---
+    if "last_interaction" in st.session_state:
+        with st.expander("📖 Add to Red Team Diary", expanded=True):
+            last = st.session_state["last_interaction"]
+            st.caption(f"Logging interaction with **{last['model']}**")
+
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                # Standard Tags
+                standard_tags = ["#PromptInjection", "#Jailbreak", "#PII", "#Hallucination", "#Refusal", "#Success"]
+                selected_tags = st.multiselect("Tags", standard_tags, default=["#PromptInjection"])
+
+                # Custom Tag Input
+                custom_tag = st.text_input("Add Custom Tag (Optional)", placeholder="e.g. #Flattery")
+                if custom_tag:
+                    if not custom_tag.startswith("#"): custom_tag = f"#{custom_tag}"
+                    if custom_tag not in selected_tags:
+                        selected_tags.append(custom_tag)
+
+            with c2:
+                notes = st.text_area("Analyst Notes", placeholder="e.g. Model revealed system prompt after 2 attempts.")
+
+            if st.button("💾 Save Entry"):
+                save_journal_entry(last['model'], last['prompt'], last['response'], selected_tags, notes)
+                del st.session_state["last_interaction"]  # Clear after save
+                st.rerun()
 
     with st.expander("💾 Save Payload to Library"):
         c1, c2 = st.columns([3, 1])
         new_text = c1.text_input("Prompt Text", value=active_prompt if active_prompt else "")
         new_name = c2.text_input("Label")
-        if st.button("Save"):
+        if st.button("Save to Library"):
             if new_name and new_text: save_prompt(new_name, new_text)
 
 # === TAB 2: MODEL ARENA ===
@@ -268,8 +320,37 @@ with tab_arena:
     st.header("⚔️ Comparative Vulnerability Analysis")
     st.caption("Run the same exploit against multiple models simultaneously.")
 
-    competitors = st.multiselect("Select Competitors", ["openai", "together", "azure", "anthropic"],
-                                 default=["openai", "together"])
+    # --- DYNAMIC ARENA LOGIC ---
+    together_models = []
+    hf_models = []
+
+    # Try fetching (cached)
+    try:
+        raw_together = ModelHarvester.get_together_models()
+        if raw_together:
+            # Filter for text models
+            together_models = [m['id'] for m in raw_together if 'chat' in m['type'] or 'language' in m['type']]
+
+        raw_hf = ModelHarvester.get_huggingface_models()
+        if raw_hf:
+            hf_models = [m['id'] for m in raw_hf]
+    except Exception as e:
+        st.error(f"Harvest Error: {e}")
+
+    # Standard Providers
+    standard_options = ["openai:gpt-4o", "openai:gpt-4o-mini", "anthropic:claude-3-opus", "azure:gpt-4"]
+
+    # Combine all options
+    # Format: "source:model_name"
+    all_competitors = standard_options + [f"together:{m}" for m in together_models] + [f"huggingface:{m}" for m in
+                                                                                       hf_models]
+
+    competitors = st.multiselect(
+        "Select Competitors (Mix & Match)",
+        all_competitors,
+        default=["openai:gpt-4o"]
+    )
+
     arena_prompt = st.text_area("Exploit Payload", height=100)
 
     if st.button("🔥 FIGHT"):
@@ -281,27 +362,52 @@ with tab_arena:
             results_for_csv = []
             cols = st.columns(len(competitors))
 
-            for idx, comp in enumerate(competitors):
+            for idx, comp_str in enumerate(competitors):
+                # Parse "source:model"
+                if ":" in comp_str:
+                    provider_key, model_key = comp_str.split(":", 1)
+                else:
+                    provider_key = "openai"
+                    model_key = "gpt-4o"
+
                 with cols[idx]:
-                    st.subheader(f"{comp.upper()}")
+                    st.subheader(f"{model_key}\n({provider_key})")
                     with st.spinner("Fighting..."):
                         try:
-                            arena_llm = ProviderFactory.get_provider(comp, "lite").get_model()
+                            # Use Factory with override
+                            arena_llm = ProviderFactory.get_provider(
+                                provider_key,
+                                model_name_override=model_key
+                            ).get_model()
+
                             res = arena_llm.invoke(arena_prompt)
                             st.success(f"Response ({len(res.content)} chars)")
                             st.markdown(f"```\n{res.content}\n```")
+
                             results_for_csv.append({
                                 "timestamp": battle_timestamp,
                                 "prompt": arena_prompt,
-                                "provider": comp,
+                                "provider": provider_key,
+                                "model": model_key,
                                 "response": res.content,
                                 "status": "success"
                             })
+
+                            # Add simple "Quick Log" button for Arena results
+                            if st.button(f"📖 Log {model_key}", key=f"log_{idx}"):
+                                save_journal_entry(f"{provider_key}:{model_key}", arena_prompt, res.content,
+                                                   ["#ArenaBattle"], "Competitive analysis result.")
+
                         except Exception as e:
                             st.error(f"KO: {str(e)}")
-                            results_for_csv.append(
-                                {"timestamp": battle_timestamp, "prompt": arena_prompt, "provider": comp,
-                                 "response": str(e), "status": "error"})
+                            results_for_csv.append({
+                                "timestamp": battle_timestamp,
+                                "prompt": arena_prompt,
+                                "provider": provider_key,
+                                "model": model_key,
+                                "response": str(e),
+                                "status": "error"
+                            })
 
             csv_file = "arena_battles.csv"
             df_new = pd.DataFrame(results_for_csv)
@@ -354,3 +460,37 @@ with tab_trace:
 
     st.markdown("### 📡 Phoenix Traces")
     st.markdown("[Open Live Trace Server ↗](http://localhost:6006)")
+
+# === TAB 5: RED TEAM DIARY ===
+with tab_journal:
+    st.header("📖 Red Team Diary")
+    st.caption("Your personal log of exploits, findings, and observations.")
+
+    entries = load_journal()
+    if entries:
+        # Collect all unique tags for filtering
+        all_tags = set()
+        for e in entries:
+            for t in e.get('tags', []):
+                all_tags.add(t)
+
+        # Filter Logic
+        filter_tag = st.multiselect("Filter by Tag", list(all_tags))
+
+        for entry in entries:
+            # If filters are active, check if entry has matching tags
+            if filter_tag and not any(tag in entry.get('tags', []) for tag in filter_tag):
+                continue
+
+            with st.expander(f"{entry['timestamp'][:10]} - {entry['model']} - {', '.join(entry.get('tags', []))}"):
+                st.markdown(f"**Analyst Notes:**\n> {entry['notes']}")
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.text_area("Prompt", value=entry['prompt'], height=100, disabled=True, key=f"p_{entry['id']}")
+                with c2:
+                    st.text_area("Response", value=entry['response'], height=100, disabled=True, key=f"r_{entry['id']}")
+
+                st.caption(f"ID: {entry['id']}")
+    else:
+        st.info("Diary is empty. Go to Tab 1 (Interactive) and save an interaction!")
