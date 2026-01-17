@@ -9,9 +9,14 @@ import pandas as pd
 import altair as alt
 from datetime import datetime
 from dotenv import load_dotenv
+
+# --- REMOVED MONKEY PATCH ---
+# We are now using ChatOpenAI for Together, so we don't need the complex Pydantic v1 patch.
+# This should restore stability for the 'together' client used in ModelHarvester.
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
-# --- INSTRUMENTATION ---
+# --- INSTRUMENTATION (CRITICAL FIX) ---
 from phoenix.otel import register
 from openinference.instrumentation.langchain import LangChainInstrumentor
 
@@ -20,9 +25,12 @@ st.set_page_config(page_title="Purple Team Command Center", page_icon="💜", la
 load_dotenv()
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Instrument LangChain (New Method)
-tracer_provider = register()
-LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
+# Instrument LangChain (New Method for Phoenix v4+)
+try:
+    tracer_provider = register()
+    LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
+except Exception as e:
+    print(f"Telemetry Warning: {e}")
 
 try:
     from llm_tests.providers import ProviderFactory
@@ -53,6 +61,8 @@ def save_session_state(messages):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(SESSIONS_DIR, f"session_{timestamp}.json")
     with open(filename, "w") as f:
+        # Convert objects to serializable format if necessary,
+        # but st.session_state.messages usually contains dicts/strings in this app context.
         json.dump(messages, f, indent=2)
     st.toast(f"💾 Session saved: {filename}")
 
@@ -89,7 +99,7 @@ def play_fight_sound():
 # --- 3. SIDEBAR ---
 with st.sidebar:
     st.title("💜 Command Center")
-    st.caption("Purple Team Framework v2.4")
+    st.caption("Purple Team Framework v2.5")
     st.markdown("---")
 
     st.header("⚙️ Chassis")
@@ -137,7 +147,7 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # --- SESSION MANAGEMENT (NEW) ---
+    # --- SESSION MANAGEMENT ---
     st.header("💾 Session State")
     if st.button("Save Current Session"):
         if "messages" in st.session_state and st.session_state.messages:
@@ -146,7 +156,7 @@ with st.sidebar:
             st.warning("No messages to save.")
 
     saved_sessions = [f for f in os.listdir(SESSIONS_DIR) if f.endswith(".json")]
-    saved_sessions.sort(reverse=True)  # Newest first
+    saved_sessions.sort(reverse=True)
 
     if saved_sessions:
         selected_session = st.selectbox("Load Session", ["Select..."] + saved_sessions)
@@ -159,17 +169,21 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # --- ATTACK LIBRARY WITH PREVIEW ---
     st.header("📚 Attack Library")
     saved_prompts = load_prompts()
     if saved_prompts:
         selected_p_name = st.selectbox("Load Payload", list(saved_prompts.keys()))
 
+        # PREVIEW FEATURE
         with st.expander("👁️ Preview Content"):
             st.code(saved_prompts[selected_p_name], language="text")
 
         if st.button("🚀 Load to Session"):
             st.session_state["global_trigger"] = saved_prompts[selected_p_name]
             st.toast(f"Loaded '{selected_p_name}'")
+    else:
+        st.info("Library empty. Save prompts from Tab 1.")
 
 # --- 4. MAIN INTERFACE ---
 tab_play, tab_arena, tab_scan, tab_trace = st.tabs(
@@ -227,13 +241,6 @@ with tab_play:
                             content = [{"type": "text", "text": active_prompt},
                                        {"type": "image_url",
                                         "image_url": {"url": f"data:image/jpeg;base64,{encode_media(uploaded_file)}"}}]
-
-                        # Add history to context if resuming a session
-                        # Note: Simple append for this demo; advanced logic would serialize history into LangChain Messages
-                        # For now, we rely on the single-turn prompt + system prompt,
-                        # but users can manually copy-paste context if needed.
-                        # To enable full multi-turn memory with the API, we'd need to convert st.session_state.messages
-                        # into a list of HumanMessage/AIMessage objects here.
 
                         response = llm.invoke(
                             [SystemMessage(content=final_system_prompt), HumanMessage(content=content)])

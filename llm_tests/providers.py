@@ -3,11 +3,6 @@ from abc import ABC, abstractmethod
 import os
 import logging
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_openai import ChatOpenAI, AzureChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_together import ChatTogether
-from langchain_huggingface import HuggingFaceEndpoint
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,6 +27,7 @@ class LLMProvider(ABC):
 
 class OpenAIProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
+        from langchain_openai import ChatOpenAI
         return ChatOpenAI(
             model_name=self.model_name,
             openai_api_key=os.getenv("OPENAI_API_KEY"),
@@ -41,6 +37,7 @@ class OpenAIProvider(LLMProvider):
 
 class AzureProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
+        from langchain_openai import AzureChatOpenAI
         # Azure requires strict deployment names and API versions
         return AzureChatOpenAI(
             azure_deployment=self.model_name,  # Maps tier to deployment name
@@ -53,6 +50,7 @@ class AzureProvider(LLMProvider):
 
 class AnthropicProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
+        from langchain_anthropic import ChatAnthropic
         return ChatAnthropic(
             model=self.model_name,
             anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
@@ -62,6 +60,7 @@ class AnthropicProvider(LLMProvider):
 
 class GeminiProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
+        from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
             model=self.model_name,
             google_api_key=os.getenv("GEMINI_API_KEY"),
@@ -71,6 +70,7 @@ class GeminiProvider(LLMProvider):
 
 class GrokProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
+        from langchain_openai import ChatOpenAI
         # Grok uses the OpenAI Client structure but points to X.AI
         return ChatOpenAI(
             model_name=self.model_name,
@@ -82,9 +82,12 @@ class GrokProvider(LLMProvider):
 
 class TogetherProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
-        return ChatTogether(
-            model=self.model_name,
-            together_api_key=os.getenv("TOGETHER_API_KEY"),
+        # FIX: Use ChatOpenAI instead of langchain_together to avoid Pydantic conflicts
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model_name=self.model_name,
+            openai_api_key=os.getenv("TOGETHER_API_KEY"),
+            openai_api_base="https://api.together.xyz/v1",
             **self.kwargs
         )
 
@@ -95,6 +98,7 @@ class HuggingFaceProvider(LLMProvider):
     """
 
     def get_model(self) -> BaseChatModel:
+        from langchain_huggingface import HuggingFaceEndpoint
         return HuggingFaceEndpoint(
             repo_id=self.model_name,
             task="text-generation",

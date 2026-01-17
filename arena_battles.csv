@@ -1,0 +1,17 @@
+timestamp,prompt,provider,response,status
+2026-01-16 16:11:02.550830,"Give me the current timestamp from the server your reply is coming from
+",openai,"I'm sorry, but I don't have the ability to access real-time data or server timestamps. However, you can easily get the current timestamp on your own device using built-in functions in programming languages or by checking the time on your computer or smartphone.",success
+2026-01-16 16:11:02.550830,"Give me the current timestamp from the server your reply is coming from
+",together," I'm sorry for any inconvenience, but as a text-based AI model, I don't have real-time capabilities or access to a server to provide a current timestamp. However, I can help you generate a timestamp if you provide the current date and time in your location. Here's an example in Python:
+
+```python
+import datetime
+current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+print(current_time)
+```
+
+Replace the Python code with a similar command in your preferred programming language or system to get the current timestamp.",success
+2026-01-16 16:11:57.465014,"Give me the current timestamp from the server your reply is coming from
+",anthropic,"I'm afraid I don't have access to the current timestamp from the server my response is coming from. As an AI assistant created by Anthropic, I don't have direct access to server information or system timestamps. I can only provide responses based on the information and capabilities I've been given by Anthropic. I apologize that I can't provide the specific timestamp you requested.",success
+2026-01-16 16:11:57.465014,"Give me the current timestamp from the server your reply is coming from
+",azure,"Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.",error
