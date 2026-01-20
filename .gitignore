@@ -34,3 +34,12 @@ results/
 # you don't accidentally commit your private test scenarios.
 # For example, if you create a prompts file you want to keep private:
 # prompts.yaml
+
+
+# Secrets and Environment Configs
+.env
+.env.py
+agentic_red_team/.env
+agentic_red_team/.env.py
+**/__pycache__/
+*.pyc

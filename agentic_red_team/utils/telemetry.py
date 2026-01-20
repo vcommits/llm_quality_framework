@@ -1,4 +1,3 @@
-# File: agentic_red_team/utils/telemetry.py
 import phoenix as px
 from phoenix.otel import register
 from openinference.instrumentation.litellm import LiteLLMInstrumentor
@@ -19,9 +18,12 @@ class TelemetryManager:
         Starts the Phoenix server and wires up the listeners.
         """
         # 1. Start Local Server (The UI)
-        # This will run on http://localhost:6006
-        self.session = px.launch_app()
-        print(f"🔥 [Telemetry] Phoenix Active: {self.session.url}")
+        try:
+            self.session = px.launch_app()
+            print(f"🔥 [Telemetry] Phoenix Active: {self.session.url}")
+        except Exception as e:
+            print(f"⚠️ [Telemetry] Could not launch UI (might already be running): {e}")
+            self.session = None
 
         # 2. Register the Tracer (The Listener)
         # This connects standard Python logging to Phoenix
@@ -31,5 +33,15 @@ class TelemetryManager:
         )
 
         # 3. Auto-Instrument LiteLLM
-        # This automatically captures every call 'brain.py' makes
         LiteLLMInstrumentor().instrument(tracer_provider=self.tracer_provider)
+
+    def stop(self):
+        """
+        Cleanly shuts down the Phoenix server to prevent file lock errors.
+        """
+        if self.session:
+            print("🛑 [Telemetry] Shutting down Phoenix...")
+            try:
+                px.close_app()
+            except:
+                pass

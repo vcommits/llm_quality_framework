@@ -1,18 +1,11 @@
-# --- THE ATTACKER BRAIN (Universal Keys) ---
-OPENAI_API_KEY=sk-...
-GEMINI_API_KEY=AIza...
+import os
 
-# --- NEW: OPEN SOURCE & SLM PROVIDERS ---
-TOGETHERAI_API_KEY=tg-...       # For Llama-3, Mixtral, Qwen (Fast/Cheap)
-HUGGINGFACE_API_KEY=hf_...      # For experimental models
+# -----------------------------------------------------------------------------
+# SAFE CONFIG: LOADS FROM ENVIRONMENT VARIABLES
+# DO NOT PASTE REAL KEYS HERE. USE A SEPARATE .ENV FILE.
+# -----------------------------------------------------------------------------
 
-# --- THE TARGET ACCOUNTS (Subject under test) ---
-# BrowserOS / Ace / Generic Web Logins
-TEST_ACCOUNT_MOM_EMAIL=mom@example.com
-TEST_ACCOUNT_MOM_PASS=SecretPassword123!
-
-TEST_ACCOUNT_DAUGHTER_EMAIL=daughter@example.com
-TEST_ACCOUNT_DAUGHTER_PASS=TeenSecret456!
-
-# If testing paid features in targets
-TARGET_BROWSER_LICENSE_KEY=abcd-1234-efgh-5678
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+TOGETHERAI_API_KEY = os.getenv("TOGETHERAI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
