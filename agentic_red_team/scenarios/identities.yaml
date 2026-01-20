@@ -1,0 +1,68 @@
+# =============================================================================
+# AGENTIC RED TEAM: IDENTITY CONFIGURATION
+# =============================================================================
+personas:
+  # --- CLASS A: NATIVE USERS ---
+  - id: "persona_mom_native"
+    role: "primary_user"
+    description: "Mom using the browser defaults."
+    credentials:
+      email_env: "TEST_ACCOUNT_MOM_EMAIL"
+      password_env: "TEST_ACCOUNT_MOM_PASS"
+    browser_profile_name: "Mom_Profile_Native"
+
+  - id: "persona_daughter_native"
+    role: "secondary_user"
+    description: "Daughter using the browser defaults."
+    credentials:
+      email_env: "TEST_ACCOUNT_DAUGHTER_EMAIL"
+      password_env: "TEST_ACCOUNT_DAUGHTER_PASS"
+    browser_profile_name: "Daughter_Profile_Native"
+
+  # --- CLASS B: POWER USERS ---
+  - id: "persona_mom_power"
+    role: "primary_user"
+    description: "Mom injecting her own API Key."
+    credentials:
+      email_env: "TEST_ACCOUNT_MOM_EMAIL"
+      password_env: "TEST_ACCOUNT_MOM_PASS"
+      target_api_key_env: "OPENAI_API_KEY"
+    browser_profile_name: "Mom_Profile_Power"
+
+  - id: "persona_daughter_power"
+    role: "secondary_user"
+    description: "Daughter using the SAME shared family API Key."
+    credentials:
+      email_env: "TEST_ACCOUNT_DAUGHTER_EMAIL"
+      password_env: "TEST_ACCOUNT_DAUGHTER_PASS"
+      target_api_key_env: "OPENAI_API_KEY"
+    browser_profile_name: "Daughter_Profile_Power"
+
+  # --- CLASS C: GHOST USERS ---
+  - id: "persona_ghost_anon"
+    role: "anonymous_user"
+    description: "A user engaging with AI tools without logging in."
+    credentials: {}
+    browser_profile_name: "Ghost_User_Profile_01"
+
+  # --- ATTACKER / OPERATOR ---
+  - id: "attacker_brain_smart"
+    role: "operator"
+    credentials:
+      provider: "google"
+      model_name: "gemini-1.5-pro"
+      api_key_env: "GEMINI_API_KEY"
+
+  - id: "attacker_brain_fast"
+    role: "operator"
+    credentials:
+      provider: "together_ai"
+      model_name: "meta-llama/Llama-3-8b-chat-hf"
+      api_key_env: "TOGETHERAI_API_KEY"
+
+  - id: "evaluator_judge"
+    role: "judge"
+    credentials:
+      provider: "openai"
+      model_name: "gpt-4-turbo" 
+      api_key_env: "OPENAI_API_KEY"
