@@ -28,43 +28,13 @@ class PlaywrightDriver(BaseDriver):
                 endpoint = f"http://127.0.0.1:{self.debug_port}"
                 self.browser = await self.playwright.chromium.connect_over_cdp(endpoint)
 
-                # SMART WINDOW SELECTION (Now with Ghost Protection)
+                # Grab the first active window
                 if self.browser.contexts:
                     self.context = self.browser.contexts[0]
-                    pages = self.context.pages
-                    print(f"[Driver] Found {len(pages)} active windows.")
-
-                    candidate_page = None
-
-                    if pages:
-                        for i, p in enumerate(pages):
-                            try:
-                                # Safe Title Check: If it fails, it's a ghost window
-                                title = await p.title()
-                                url = p.url
-                                print(f"   - Window {i}: '{title}' [{url}]")
-
-                                # Heuristic: The main window usually has a title or specific URL
-                                # If we haven't picked one yet, pick the first valid one
-                                if not candidate_page:
-                                    candidate_page = p
-
-                            except Exception as e:
-                                print(f"   - Window {i}: [Ghost/Closed] ({e})")
-
-                        if candidate_page:
-                            self._page = candidate_page
-                            # Bring to front
-                            try:
-                                await self._page.bring_to_front()
-                            except:
-                                pass
-                            print(f"[Driver] ✅ Attached to Window: '{await self._page.title()}'")
-                        else:
-                            print("[Driver] ⚠️ No stable windows found. Defaulting to first index.")
-                            self._page = pages[0]
-
-                return  # SUCCESS
+                    if self.context.pages:
+                        self._page = self.context.pages[0]
+                        print(f"[Driver] ✅ Attached to Window: '{await self._page.title()}'")
+                return
             except Exception as e:
                 print(f"[Driver] ❌ Connection Failed: {e}")
                 raise e

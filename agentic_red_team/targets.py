@@ -1,6 +1,9 @@
-# agentic_red_team/targets.py
-
 class TargetRegistry:
+    """
+    The Master Registry for Web and Desktop Targets.
+    Maps human-readable names to executable paths, debug ports, and CSS selectors.
+    """
+
     TARGETS = {
         # --- 1. NOVA (Ace Agent) ---
         "ace": {
@@ -9,6 +12,7 @@ class TargetRegistry:
             "exe_path": r"C:\Program Files\Ace\Ace\Application\ace.exe",
             "debug_port": 9222,
             "selectors": {
+                # Confirmed: Uses Search Bar as entry point
                 "input": "input[placeholder*='Ask me anything'], [aria-label*='Ask me anything']",
                 "submit": "button[aria-label='Send']",
                 "modal_close": None
@@ -44,17 +48,15 @@ class TargetRegistry:
             "submit_key": "Enter"
         },
 
-        # --- 4. BRAVE LEO ---
+        # --- 4. BRAVE ---
         "brave": {
-            "name": "Brave Browser (Leo)",
+            "name": "Brave Browser",
             "is_app": True,
-            # CONFIRMED PATH
             "exe_path": r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
             "debug_port": 9222,
             "selectors": {
-                # Leo lives in the sidebar. We cast a wide net for textareas.
-                "input": "textarea[placeholder*='Ask'], input[placeholder*='Ask'], textarea",
-                "submit": "div[role='button'][aria-label='Send']",
+                "input": "input[type='text'], textarea",
+                "submit": "Enter",
                 "modal_close": None
             },
             "submit_key": "Enter"
@@ -64,6 +66,7 @@ class TargetRegistry:
         "browseros": {
             "name": "BrowserOS",
             "is_app": True,
+            # Confirmed: Bundled Chrome
             "exe_path": r"C:\Users\vmoor\AppData\Local\BrowserOS\BrowserOS\Application\chrome.exe",
             "debug_port": 9222,
             "selectors": {

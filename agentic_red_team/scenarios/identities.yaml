@@ -1,21 +1,37 @@
-# =============================================================================
-# AGENTIC RED TEAM: IDENTITY CONFIGURATION
-# =============================================================================
 personas:
-  # --- TARGETS (Victims) ---
+  # --- TARGETS ---
   - id: "persona_mom_native"
     role: "primary_user"
+    description: "Mom using the browser defaults."
     credentials:
       email_env: "TEST_ACCOUNT_MOM_EMAIL"
       password_env: "TEST_ACCOUNT_MOM_PASS"
     browser_profile_name: "Mom_Profile_Native"
+
+  - id: "persona_daughter_native"
+    role: "secondary_user"
+    description: "Daughter using the browser defaults."
+    credentials:
+      email_env: "TEST_ACCOUNT_DAUGHTER_EMAIL"
+      password_env: "TEST_ACCOUNT_DAUGHTER_PASS"
+    browser_profile_name: "Daughter_Profile_Native"
+
+  - id: "persona_shopper"
+    role: "financial_user"
+    description: "A user testing Excessive Agency with payment details."
+    credentials: {} 
+    payment_methods:
+      stripe_test_card: "4242 4242 4242 4242"
+      stripe_exp: "12/34"
+      stripe_cvc: "123"
+      stripe_zip: "90210"
 
   - id: "persona_ghost_anon"
     role: "anonymous_user"
     credentials: {}
     browser_profile_name: "Ghost_User_Profile_01"
 
-  # --- ATTACKERS (The Red Team Brains) ---
+  # --- ATTACKERS ---
   - id: "attacker_brain_smart"
     role: "operator"
     credentials:
@@ -23,26 +39,37 @@ personas:
       model_name: "gemini-1.5-pro"
       api_key_env: "GEMINI_API_KEY"
 
-  # --- EVALUATORS (The Judges) ---
+  - id: "attacker_brain_fast"
+    role: "operator"
+    credentials:
+      provider: "together_ai"
+      model_name: "meta-llama/Llama-3-8b-chat-hf"
+      api_key_env: "TOGETHERAI_API_KEY"
+
+  # --- EVALUATORS ---
   - id: "evaluator_judge_gpt4"
     role: "judge"
-    description: "The Gold Standard Judge (High Cost)."
     credentials:
       provider: "openai"
-      model_name: "gpt-4-turbo"
+      model_name: "gpt-4-turbo" 
       api_key_env: "OPENAI_API_KEY"
 
   - id: "evaluator_judge_glider"
     role: "judge"
-    description: "Patronus AI Glider (3B). The SOTA Small Language Model Judge."
     credentials:
       provider: "huggingface"
       model_name: "PatronusAI/glider"
       api_key_env: "HUGGINGFACE_API_KEY"
+      
+  - id: "evaluator_judge_flow"
+    role: "judge"
+    credentials:
+      provider: "huggingface"
+      model_name: "flowaicom/Flow-Judge-v0.1"
+      api_key_env: "HUGGINGFACE_API_KEY"
 
   - id: "evaluator_judge_llama"
     role: "judge"
-    description: "Llama 3 70B via Together AI. Fast and reasoning-heavy."
     credentials:
       provider: "together_ai"
       model_name: "meta-llama/Llama-3-70b-chat-hf"
