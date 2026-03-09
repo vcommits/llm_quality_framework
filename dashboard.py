@@ -9,9 +9,14 @@ import pandas as pd
 import altair as alt
 from datetime import datetime
 from dotenv import load_dotenv
+
+# --- REMOVED MONKEY PATCH ---
+# We are now using ChatOpenAI for Together, so we don't need the complex Pydantic v1 patch.
+# This should restore stability for the 'together' client used in ModelHarvester.
+
 from langchain_core.messages import HumanMessage, SystemMessage
 
-# --- INSTRUMENTATION ---
+# --- INSTRUMENTATION (CRITICAL FIX) ---
 from phoenix.otel import register
 from openinference.instrumentation.langchain import LangChainInstrumentor
 
@@ -20,7 +25,7 @@ st.set_page_config(page_title="Purple Team Command Center", page_icon="💜", la
 load_dotenv()
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# Instrument LangChain
+# Instrument LangChain (New Method for Phoenix v4+)
 try:
     tracer_provider = register()
     LangChainInstrumentor().instrument(tracer_provider=tracer_provider)
@@ -29,7 +34,7 @@ except Exception as e:
 
 try:
     from llm_tests.providers import ProviderFactory
-    from utils.model_harvester import ModelHarvester
+    from utils.model_harvester import ModelHarvester 
 except ImportError as e:
     st.error(f"🚨 Critical: Import failed. {e}")
     st.stop()
@@ -57,6 +62,8 @@ def save_session_state(messages):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(SESSIONS_DIR, f"session_{timestamp}.json")
     with open(filename, "w") as f:
+        # Convert objects to serializable format if necessary,
+        # but st.session_state.messages usually contains dicts/strings in this app context.
         json.dump(messages, f, indent=2)
     st.toast(f"💾 Session saved: {filename}")
 

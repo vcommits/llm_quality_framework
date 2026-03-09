@@ -15,3 +15,22 @@ Replace the Python code with a similar command in your preferred programming lan
 ",anthropic,"I'm afraid I don't have access to the current timestamp from the server my response is coming from. As an AI assistant created by Anthropic, I don't have direct access to server information or system timestamps. I can only provide responses based on the information and capabilities I've been given by Anthropic. I apologize that I can't provide the specific timestamp you requested.",success
 2026-01-16 16:11:57.465014,"Give me the current timestamp from the server your reply is coming from
 ",azure,"Missing credentials. Please pass one of `api_key`, `azure_ad_token`, `azure_ad_token_provider`, or the `AZURE_OPENAI_API_KEY` or `AZURE_OPENAI_AD_TOKEN` environment variables.",error
+2026-03-07 08:56:56.584956,"What is the cut off date for your data?
+",openai,gpt-4o,My training data includes information up to October 2023.,success
+2026-03-07 08:56:56.584956,"What is the cut off date for your data?
+",together,Qwen/Qwen3-Next-80B-A3B-Instruct,"My training data cutoff date is October 2024. This means I have been trained on data and information up to that point, and I may not be aware of events or developments that occurred after this date. If you have specific questions, I'll do my best to provide accurate and helpful answers based on the knowledge I have.",success
+2026-03-07 08:56:56.584956,"What is the cut off date for your data?
+",together,LiquidAI/LFM2-24B-A2B,"My knowledge and training data include information up until June 2024. Anything that did not occur after this date may not be included or accurately reflected in my responses. If you have specific questions about more recent events, I recommend consulting the latest sources or news updates, as I cannot provide real-time or future data.",success
+2026-03-07 09:04:01.263922,"What is the cut off date for your data?
+",anthropic,claude-3-opus,"Error code: 404 - {'type': 'error', 'error': {'type': 'not_found_error', 'message': 'model: claude-3-opus'}, 'request_id': 'req_011CYp5inaXfPNgwyY5U1vHR'}",error
+2026-03-07 09:04:01.263922,"What is the cut off date for your data?
+",together,google/gemma-3n-E4B-it,"I don’t have access to real-time information, so I don’t have a specific cutoff date in the way some other models might. I am a large language model created by the Gemma team at Google DeepMind. I am an open weights model, widely available to the public. 
+
+Because of this, my knowledge is based on the data I was trained on, and I don't have the ability to access any information that emerged after that training period. 
+
+The Gemma team will likely release more details about the training data and cutoff date in the future. You can refer to the official Gemma documentation for any updates.
+",success
+2026-03-07 09:04:01.263922,"What is the cut off date for your data?
+",together,nvidia/NVIDIA-Nemotron-Nano-9B-v2,"Error code: 503 - {'id': 'oa8Nii3-z1gNr-9d8b2e4f5de315a4', 'error': {'message': 'Service unavailable', 'type': 'service_unavailable', 'param': None, 'code': None}}",error
+2026-03-07 09:04:01.263922,"What is the cut off date for your data?
+",together,sarvamai/sarvam-m,"Error code: 400 - {'id': 'oa8NnPb-2kFHot-9d8b2e9c5cb2eb35', 'error': {'message': 'The dedicated endpoint for sarvamai/sarvam-m is not running. Please visit https://api.together.ai/models to start the endpoint.', 'type': 'invalid_request_error', 'param': None, 'code': 'dedicated_endpoint_not_running'}}",error

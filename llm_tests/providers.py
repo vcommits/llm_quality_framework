@@ -146,7 +146,7 @@ class ProviderFactory:
             'full': 'grok-2'
         },
         'together': {
-            'lite': 'mistralai/Mistral-7B-Instruct-v0.2',
+            'lite': 'mistralai/Mistral-7B-Instruct-v0.2', # Reliable serverless model
             'mid': 'mistralai/Mixtral-8x7B-Instruct-v0.1',
             'full': 'meta-llama/Llama-3-70b-chat-hf',
             'code': 'mistralai/Codestral-22B-v0.1',
