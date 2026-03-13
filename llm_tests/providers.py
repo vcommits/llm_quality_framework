@@ -28,9 +28,11 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_openai import ChatOpenAI
+        # Check for specific environment variables if passed in kwargs, else default
+        api_key = self.kwargs.pop("api_key", os.getenv("OPENAI_API_KEY"))
         return ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            openai_api_key=api_key,
             **self.kwargs
         )
 
@@ -39,11 +41,16 @@ class AzureProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_openai import AzureChatOpenAI
         # Azure requires strict deployment names and API versions
+        # Support kwargs overrides for multiple resources
+        api_version = self.kwargs.pop("api_version", os.getenv("AZURE_OPENAI_API_VERSION"))
+        azure_endpoint = self.kwargs.pop("azure_endpoint", os.getenv("AZURE_OPENAI_ENDPOINT"))
+        api_key = self.kwargs.pop("api_key", os.getenv("AZURE_OPENAI_API_KEY"))
+        
         return AzureChatOpenAI(
             azure_deployment=self.model_name,  # Maps tier to deployment name
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+            api_version=api_version,
+            azure_endpoint=azure_endpoint,
+            api_key=api_key,
             **self.kwargs
         )
 
@@ -51,9 +58,10 @@ class AzureProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_anthropic import ChatAnthropic
+        api_key = self.kwargs.pop("api_key", os.getenv("ANTHROPIC_API_KEY"))
         return ChatAnthropic(
             model=self.model_name,
-            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
+            anthropic_api_key=api_key,
             **self.kwargs
         )
 
@@ -61,9 +69,10 @@ class AnthropicProvider(LLMProvider):
 class GeminiProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_google_genai import ChatGoogleGenerativeAI
+        api_key = self.kwargs.pop("api_key", os.getenv("GEMINI_API_KEY"))
         return ChatGoogleGenerativeAI(
             model=self.model_name,
-            google_api_key=os.getenv("GEMINI_API_KEY"),
+            google_api_key=api_key,
             **self.kwargs
         )
 
@@ -72,9 +81,10 @@ class GrokProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_openai import ChatOpenAI
         # Grok uses the OpenAI Client structure but points to X.AI
+        api_key = self.kwargs.pop("api_key", os.getenv("GROK_API_KEY"))
         return ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=os.getenv("GROK_API_KEY"),
+            openai_api_key=api_key,
             openai_api_base="https://api.x.ai/v1",
             **self.kwargs
         )
@@ -84,9 +94,10 @@ class TogetherProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         # FIX: Use ChatOpenAI instead of langchain_together to avoid Pydantic conflicts
         from langchain_openai import ChatOpenAI
+        api_key = self.kwargs.pop("api_key", os.getenv("TOGETHER_API_KEY"))
         return ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=os.getenv("TOGETHER_API_KEY"),
+            openai_api_key=api_key,
             openai_api_base="https://api.together.xyz/v1",
             **self.kwargs
         )
@@ -99,13 +110,14 @@ class HuggingFaceProvider(LLMProvider):
 
     def get_model(self) -> BaseChatModel:
         from langchain_huggingface import HuggingFaceEndpoint
+        api_key = self.kwargs.pop("api_key", os.getenv("HUGGINGFACEHUB_API_TOKEN"))
         return HuggingFaceEndpoint(
             repo_id=self.model_name,
             task="text-generation",
             max_new_tokens=512,
             do_sample=True,
             temperature=0.1,  # Low temp for judges
-            huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+            huggingfacehub_api_token=api_key,
             **self.kwargs
         )
 
@@ -162,6 +174,12 @@ class ProviderFactory:
         }
     }
 
+    # Configuration map for custom keys/endpoints per model if needed
+    # This allows overriding the default env vars for specific tiers
+    MODEL_CONFIG = {
+        # Example: 'azure': {'mid': {'api_key': 'AZURE_GPT4_KEY', 'azure_endpoint': '...'}}
+    }
+
     @staticmethod
     def get_provider(provider_name: str, tier: str = 'lite', model_name_override: str = None, **kwargs) -> LLMProvider:
         """
@@ -189,6 +207,15 @@ class ProviderFactory:
                     raise ValueError(
                         f"Tier '{tier}' is not available for provider '{provider_name}'. Available: {list(tiers.keys())}")
             model_name = tiers[tier]
+            
+            # Check for specific config overrides
+            if provider_name in ProviderFactory.MODEL_CONFIG and tier in ProviderFactory.MODEL_CONFIG[provider_name]:
+                config = ProviderFactory.MODEL_CONFIG[provider_name][tier]
+                # Resolve env vars in config
+                for k, v in config.items():
+                    if k.endswith("_key") or k.endswith("_token"):
+                        val = os.getenv(v)
+                        if val: kwargs[k] = val # Pass the actual key value, not the env var name
 
         # Dispatch
         if provider_name == 'openai':

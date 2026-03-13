@@ -1,0 +1,23 @@
+[Unit]
+Description=Ghidorah Node 1 API Gateway (Purple Team Core)
+After=network.target
+
+[Service]
+# User running the service
+User=godzilla
+WorkingDirectory=/home/godzilla/ghidorah/node1_ghidorah_llmframework
+
+# Environment variables
+Environment="PATH=/home/godzilla/ghidorah/node1_ghidorah_llmframework/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/home/godzilla/ghidorah/node1_ghidorah_llmframework/.env
+
+# Command to start the API
+# We use the python from the venv directly
+ExecStart=/home/godzilla/ghidorah/node1_ghidorah_llmframework/.venv/bin/python node1_api.py
+
+# Auto-restart on crash
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
