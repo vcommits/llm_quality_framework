@@ -35,11 +35,16 @@ results/
 # For example, if you create a prompts file you want to keep private:
 # prompts.yaml
 
-
 # Secrets and Environment Configs
 .env
 .env.py
 agentic_red_team/.env
 agentic_red_team/.env.py
-**/__pycache__/
-*.pyc
+
+# --- Dynamic Framework Data ---
+# Ignore live session logs and arena CSVs to prevent bloating the repo
+saved_sessions/
+red_team_journal.json
+arena_battles.csv
+*.csv
+*.json

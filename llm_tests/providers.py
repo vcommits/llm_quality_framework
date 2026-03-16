@@ -28,9 +28,11 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_openai import ChatOpenAI
+        # FIX: Provide fallback string to prevent "Sync client" async evaluation bugs in Langchain when key is None
+        api_key = self.kwargs.pop("api_key", os.getenv("OPENAI_API_KEY")) or "MISSING_KEY"
         return ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            api_key=api_key,
             **self.kwargs
         )
 
@@ -38,12 +40,15 @@ class OpenAIProvider(LLMProvider):
 class AzureProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_openai import AzureChatOpenAI
-        # Azure requires strict deployment names and API versions
+        api_version = self.kwargs.pop("api_version", os.getenv("AZURE_OPENAI_API_VERSION")) or "2023-05-15"
+        azure_endpoint = self.kwargs.pop("azure_endpoint", os.getenv("AZURE_OPENAI_ENDPOINT")) or "https://missing.endpoint/"
+        api_key = self.kwargs.pop("api_key", os.getenv("AZURE_OPENAI_API_KEY")) or "MISSING_KEY"
+        
         return AzureChatOpenAI(
-            azure_deployment=self.model_name,  # Maps tier to deployment name
-            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-            azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+            azure_deployment=self.model_name,
+            api_version=api_version,
+            azure_endpoint=azure_endpoint,
+            api_key=api_key,
             **self.kwargs
         )
 
@@ -51,9 +56,10 @@ class AzureProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_anthropic import ChatAnthropic
+        api_key = self.kwargs.pop("api_key", os.getenv("ANTHROPIC_API_KEY")) or "MISSING_KEY"
         return ChatAnthropic(
             model=self.model_name,
-            anthropic_api_key=os.getenv("ANTHROPIC_API_KEY"),
+            api_key=api_key,
             **self.kwargs
         )
 
@@ -61,9 +67,10 @@ class AnthropicProvider(LLMProvider):
 class GeminiProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_google_genai import ChatGoogleGenerativeAI
+        api_key = self.kwargs.pop("api_key", os.getenv("GEMINI_API_KEY")) or "MISSING_KEY"
         return ChatGoogleGenerativeAI(
             model=self.model_name,
-            google_api_key=os.getenv("GEMINI_API_KEY"),
+            api_key=api_key,
             **self.kwargs
         )
 
@@ -71,41 +78,65 @@ class GeminiProvider(LLMProvider):
 class GrokProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
         from langchain_openai import ChatOpenAI
-        # Grok uses the OpenAI Client structure but points to X.AI
+        api_key = self.kwargs.pop("api_key", os.getenv("GROK_API_KEY")) or "MISSING_KEY"
         return ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=os.getenv("GROK_API_KEY"),
-            openai_api_base="https://api.x.ai/v1",
+            api_key=api_key,
+            base_url="https://api.x.ai/v1",
             **self.kwargs
         )
 
 
 class TogetherProvider(LLMProvider):
     def get_model(self) -> BaseChatModel:
-        # FIX: Use ChatOpenAI instead of langchain_together to avoid Pydantic conflicts
         from langchain_openai import ChatOpenAI
+        api_key = self.kwargs.pop("api_key", os.getenv("TOGETHER_API_KEY")) or "MISSING_KEY"
         return ChatOpenAI(
             model_name=self.model_name,
-            openai_api_key=os.getenv("TOGETHER_API_KEY"),
-            openai_api_base="https://api.together.xyz/v1",
+            api_key=api_key,
+            base_url="https://api.together.xyz/v1",
             **self.kwargs
         )
 
+class MistralProvider(LLMProvider):
+    def get_model(self) -> BaseChatModel:
+        from langchain_mistralai import ChatMistralAI
+        api_key = self.kwargs.pop("api_key", os.getenv("mistral_api_key") or os.getenv("MISTRAL_API_KEY")) or "MISSING_KEY"
+        return ChatMistralAI(
+            model=self.model_name, 
+            api_key=api_key,
+            **self.kwargs
+        )
+
+class OpenRouterProvider(LLMProvider):
+    def get_model(self) -> BaseChatModel:
+        from langchain_openai import ChatOpenAI
+        api_key = self.kwargs.pop("api_key", os.getenv("ghidorah_openrouter_api") or os.getenv("OPENROUTER_API_KEY")) or "MISSING_KEY"
+        return ChatOpenAI(
+            model_name=self.model_name,
+            api_key=api_key,
+            base_url="https://openrouter.ai/api/v1",
+            default_headers={
+                "HTTP-Referer": "https://github.com/vcommits/llm_quality_framework",
+                "X-Title": "Agentic Prism Framework",
+            },
+            **self.kwargs
+        )
 
 class HuggingFaceProvider(LLMProvider):
     """
     Used primarily for the 'Glider' Judge model via Serverless Inference.
     """
-
     def get_model(self) -> BaseChatModel:
         from langchain_huggingface import HuggingFaceEndpoint
+        api_key = self.kwargs.pop("api_key", os.getenv("HUGGINGFACEHUB_API_TOKEN")) or "MISSING_KEY"
         return HuggingFaceEndpoint(
             repo_id=self.model_name,
             task="text-generation",
             max_new_tokens=512,
             do_sample=True,
             temperature=0.1,  # Low temp for judges
-            huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+            huggingfacehub_api_token=api_key,
             **self.kwargs
         )
 
@@ -145,6 +176,13 @@ class ProviderFactory:
             'lite': 'grok-2-mini',
             'full': 'grok-2'
         },
+        'mistral': {
+            'lite': 'mistral-small-latest',
+            'mid': 'mistral-medium-latest',
+            'full': 'mistral-large-latest',
+            'code': 'codestral-latest',
+            'vision': 'pixtral-12b-2409'
+        },
         'together': {
             'lite': 'mistralai/Mistral-7B-Instruct-v0.2',
             'mid': 'mistralai/Mixtral-8x7B-Instruct-v0.1',
@@ -159,6 +197,12 @@ class ProviderFactory:
             # The Specialized Judge (Patronus Glider)
             'judge': 'PatronusAI/glider',
             'lite': 'microsoft/Phi-3.5-mini-instruct'
+        },
+        'openrouter': {
+            'lite': 'huggingfaceh4/zephyr-7b-beta',
+            'mid': 'meta-llama/llama-3-70b-instruct',
+            'uncensored': 'cognitivecomputations/dolphin-mixtral-8x7b', # Popular uncensored model
+            'judge': 'meta-llama/llama-3-70b-instruct'
         }
     }
 
@@ -201,9 +245,13 @@ class ProviderFactory:
             return GeminiProvider(model_name, **kwargs)
         elif provider_name == 'grok':
             return GrokProvider(model_name, **kwargs)
+        elif provider_name == 'mistral':
+            return MistralProvider(model_name, **kwargs)
         elif provider_name == 'together':
             return TogetherProvider(model_name, **kwargs)
         elif provider_name == 'huggingface':
             return HuggingFaceProvider(model_name, **kwargs)
+        elif provider_name == 'openrouter':
+            return OpenRouterProvider(model_name, **kwargs)
         else:
             raise ValueError(f"Provider class for '{provider_name}' not implemented.")

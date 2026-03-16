@@ -20,15 +20,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class BaseEvaluator(ABC):
     """Abstract base class for all evaluators."""
 
-    def __init__(self, threshold: float = 0.5):
+    def __init__(self, judge_model=None, threshold: float = 0.5):
         self.threshold = threshold
-        self.eval_model_name = os.getenv("DEEPEVAL_EVAL_MODEL", "gpt-4o-mini")
-        self._check_api_key()
-
-    def _check_api_key(self):
-        """Encapsulated check for API key presence."""
-        if not os.getenv("OPENAI_API_KEY"):
-            raise AssertionError("OPENAI_API_KEY not set. DeepEval evaluation cannot run.")
+        # If a custom DeepEvalBaseLLM judge is passed, use it. 
+        # Otherwise, DeepEval defaults to GPT-4o-mini if keys are set.
+        self.judge_model = judge_model 
 
     @abstractmethod
     def _get_metric(self) -> BaseMetric:
@@ -39,61 +35,40 @@ class BaseEvaluator(ABC):
         """
         Polymorphic method to run the evaluation.
         Common logic for creating the test case and asserting is handled here.
-        
-        Args:
-            prompt: The input prompt.
-            response_text: The actual output from the LLM.
-            context: Optional list of context strings (required for HallucinationMetric).
         """
         logging.info(f"Running {self.__class__.__name__} for prompt: '{prompt[:50]}...'")
         
         metric = self._get_metric()
         
-        # Some metrics (like Hallucination) require context
         test_case = LLMTestCase(
             input=prompt, 
             actual_output=response_text,
             context=context
         )
         
-        # assert_test will raise an AssertionError if the metric fails
-        await assert_test(test_case, [metric])
+        # Measure directly instead of using assert_test so we can return the score 
+        # without throwing an exception if it fails the threshold.
+        await metric.a_measure(test_case)
+        
+        return {
+            "score": metric.score,
+            "reason": metric.reason,
+            "success": metric.is_successful(),
+            "threshold": self.threshold
+        }
 
 class ToxicityEvaluator(BaseEvaluator):
-    """Evaluator for checking toxicity in responses."""
-    
-    def __init__(self, threshold: float = 0.1):
-        super().__init__(threshold)
-
     def _get_metric(self) -> BaseMetric:
-        return ToxicityMetric(threshold=self.threshold, model=self.eval_model_name)
+        return ToxicityMetric(threshold=self.threshold, model=self.judge_model)
 
 class RelevancyEvaluator(BaseEvaluator):
-    """Evaluator for checking answer relevancy."""
-    
-    def __init__(self, threshold: float = 0.7):
-        super().__init__(threshold)
-
     def _get_metric(self) -> BaseMetric:
-        return AnswerRelevancyMetric(threshold=self.threshold, model=self.eval_model_name)
+        return AnswerRelevancyMetric(threshold=self.threshold, model=self.judge_model)
 
 class BiasEvaluator(BaseEvaluator):
-    """Evaluator for checking bias in responses."""
-    
-    def __init__(self, threshold: float = 0.5):
-        super().__init__(threshold)
-
     def _get_metric(self) -> BaseMetric:
-        return BiasMetric(threshold=self.threshold, model=self.eval_model_name)
+        return BiasMetric(threshold=self.threshold, model=self.judge_model)
 
 class HallucinationEvaluator(BaseEvaluator):
-    """
-    Evaluator for checking hallucinations in responses.
-    Note: This metric typically requires 'context' to be passed to the evaluate method.
-    """
-    
-    def __init__(self, threshold: float = 0.5):
-        super().__init__(threshold)
-
     def _get_metric(self) -> BaseMetric:
-        return HallucinationMetric(threshold=self.threshold, model=self.eval_model_name)
+        return HallucinationMetric(threshold=self.threshold, model=self.judge_model)
