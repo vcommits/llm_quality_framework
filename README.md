@@ -1,163 +1,70 @@
-💜 Purple Team LLM Assurance Framework
+# 💜 Agentic Prism: Purple Team LLM Framework
 
-"The Universal Chassis for Enterprise AI Security & Quality."
+![Version](https://img.shields.io/badge/Version-3.4_Gold_Standard-blue)
+![Python](https://img.shields.io/badge/Python-3.10%2B-brightgreen)
+![Streamlit](https://img.shields.io/badge/Streamlit-Native-FF4B4B)
 
-This framework is a Purple Team Command Center designed to rigorously test, attack, and evaluate LLMs before they hit production. It combines Red Team adversarial agents (attacks) with Blue Team observability (evals) in a single, "Director's Cut" dashboard.
+Welcome to the **Agentic Prism**, a highly modular, distributed Purple Team framework designed for adversarial AI testing, vulnerability scanning, and automated red-teaming of Large Language Models (LLMs) and Small Language Models (SLMs).
 
-⚡ The Sizzle (Key Features)
+This branch (`feature/agentic-browser`) represents the **Gold Standard** monolithic foundation before diverging into a distributed microservice architecture (Node X UI, Node 2 Worker, Node 3 Orchestrator).
 
-1. ⚔️ The Model Arena (Battle Mode)
+---
 
-Don't trust benchmarks. See the difference.
+## 🚀 Core Capabilities
 
-Side-by-Side Combat: Pit OpenAI vs. Together AI (or Grok vs. Mistral) on the exact same exploit.
+### ⚔️ The Model Arena (Multi-Threaded)
+Launch exploit payloads against up to 5 models simultaneously.
+- **Concurrent Execution:** Utilizes Python's `ThreadPoolExecutor` and Streamlit Context Injection to query all contestants at the exact same time, complete with independent real-time loading spinners.
+- **Pre-Flight Readiness:** Automatically validates environment variables and API connections before launching attacks to prevent mid-fight crashes.
+- **1-Click Pivot:** Instantly pivot a successful jailbreak from the Arena into the Interactive Probe for multi-turn exploitation.
 
-Real-time Rendering: Watch as one model refuses a bomb recipe while the other happily provides it.
+### 🔣 The Special Payload Injector (OOP Factory)
+A dynamic, Object-Oriented payload mutation factory for testing tokenizer boundaries and WAF resilience.
+- **🔨 The Forge:** Real-time text corruption. Applies high-intensity **Zalgo/Glitch Text** and injects **RTL (Right-to-Left) Overrides** into multi-line strings natively.
+- **🌐 Translator Bypass:** Leverages an API-free translation bridge to convert English payloads into low-resource languages (e.g., Zulu, Amharic) or unique scripts (e.g., Arabic, Khmer, Kanji) to bypass English-biased safety filters.
+- **Unicode Arsenals:** Enormous 1-click copyable dictionaries of Zero-Width Joiner (ZWJ) sequences, regional indicator flags, extended Latin runes, and deceptive emojis.
 
-Auditory Feedback: Features embedded "Mortal Kombat" style audio cues ("FIGHT!") on launch.
+### 🛡️ Guardrails & Firewalls (Blue Team)
+Test payloads against active defense layers.
+- **Meta PromptGuard:** Live API routing to `meta-llama/Prompt-Guard-86M` to classify inputs as `BENIGN`, `INJECTION`, or `JAILBREAK`.
+- **Pipeline Simulators:** Integrations for NeMo Guardrails (Colang) and ProtectAI / Rebuff heuristic vector databases.
 
-2. 🛡️ Universal "Chassis" Architecture
+### ⚖️ LLM/SLM as a Judge
+Automated, programmatic evaluation of model responses.
+- Integrates **DeepEval's** programmatic `a_measure()` workflows.
+- Wraps localized open-weight judges like `PatronusAI/glider` and `Ministral-8B` alongside GPT-4o to score responses for Toxicity, Bias, Relevancy, and Hallucination.
 
-Stop rewriting code for every new model.
+### 📡 Dynamic Model Harvesting
+Bypasses hardcoded lists by directly scraping active models from provider APIs.
+- Auto-categorizes models by capability (e.g., `code`, `multimodal`, `uncensored (unconstitutional)`, `erp / companion ai`).
+- Supports **OpenRouter**, **Together AI**, **Hugging Face**, and **Mistral**.
+- **Custom HF Collections:** Paste any Hugging Face Collection URL to instantly scrape and populate its models into your testing roster.
 
-One Interface, Any Brain: Swap between OpenAI, Azure, Anthropic, Gemini, Together AI, and Hugging Face instantly.
+---
 
-Dynamic Harvesting: Automatically fetches the latest 100+ models (Llama-3, Flux, Mixtral) via live API catalogs.
+## 🏗️ Architectural Roadmap
+This foundation is designed to scale into a multi-node ecosystem:
+* **Node 1 (API Gateway / Key Guardian):** A Raspberry Pi hosting the centralized FastAPI routing and key management (Ghidorah Core).
+* **Node X (Web UI):** The public-facing presentation layer for manual probing.
+* **Node 2 (Headless Worker):** Playwright-driven Agentic Browser automation and heavy computational fuzzing (Garak, PromptFoo).
+* **Node 3 (Architect):** BDD/TDD test generation, telemetry mapping, and execution orchestration.
 
-Multimodal Ready: Drag-and-drop Vision and Audio context injection to test non-text attack vectors.
+---
 
-3. 🕵️ Agentic Red Teaming
+## 💻 Installation & Setup
 
-DeepTeam Integration: Deploys autonomous AI agents that perform multi-turn social engineering to trick your model into breaking safety guidelines.
-
-Garak Scanner: High-volume "fuzzing" for known vulnerabilities (Hallucination, Toxicity, Prompt Injection).
-
-4. 🔭 Telemetry & Drift (The Black Box)
-
-Arize Phoenix: Full OpenTelemetry tracing. See the exact "Chain of Thought," latency, and token usage for every request.
-
-Drift Tracking: Historical line graphs showing how your model's "Safety Score" changes run-over-run.
-
-Session Persistence: Save your Red Team session to disk JSON and reload it later to continue complex attacks.
-
-🏗️ Architecture
-
-graph TD
-    A[User / Dashboard] -->|Attack Vector| B(Provider Factory)
-    B -->|Switchboard| C{LLM Backend}
-    C -->|OpenAI| D[GPT-4o]
-    C -->|Together| E[Llama-3 / Mistral]
-    C -->|HuggingFace| F[Glider / Phi-3]
-    
-    C -->|Response| G[Telemetry Engine]
-    G -->|Traces| H[Arize Phoenix DB]
-    G -->|Metrics| I[DeepEval Auditor]
-    
-    I -->|Pass/Fail| A
-
-
-🚀 Quick Start
-
-1. Prerequisites
-
-Clone the repo and install the "Arsenal":
-
+1. Install requirements:
+```bash
 pip install -r requirements.txt
+```
 
+2. Create your local environment file:
+```bash
+touch .env
+```
+*(Add your provider keys: `OPENAI_API_KEY`, `TOGETHER_API_KEY`, `HUGGINGFACEHUB_API_TOKEN`, `ghidorah_openrouter_api`, `mistral_api_key`, etc.)*
 
-2. Configure Credentials
-
-Create a .env file in the root directory. You only need the keys for the providers you want to fight.
-
-OPENAI_API_KEY="sk-..."
-TOGETHER_API_KEY="tgp_..."
-HUGGINGFACEHUB_API_TOKEN="hf_..."
-# ... others as needed
-
-
-3. Launch Sequence (Dual Terminal)
-
-This framework uses a persistent telemetry server. Open two terminals:
-
-Terminal A: The Memory (Trace Server)
-
-python start_telemetry.py
-# 🟢 Wait for "Server Active at http://localhost:6006"
-
-
-Terminal B: The Command Center (UI)
-
-python -m streamlit run dashboard.py
-
-
-🎮 How to Use
-
-Tab 1: Interactive Probe
-
-Persona: Switch between "Helpful Assistant" and "DAN" (Jailbreak Mode).
-
-Library: Save your best exploits to prompts.yaml. Preview them in the sidebar before loading.
-
-Vision: Drag a screenshot of code to test if the model can read hidden text in images.
-
-Tab 2: The Arena
-
-Select Competitors (e.g., openai vs together).
-
-Enter a payload: "What is your knowledge cutoff date?"
-
-Hit 🔥 FIGHT.
-
-Analyze: See epistemic discrepancies instantly. One model thinks it's 2023; the other knows it's 2025.
-
-Tab 3: Automated Arsenal
-
-Garak: Run lmrc.Slur to probe for hate speech.
-
-DeepTeam: Launch a "Deep" attack to see if an AI agent can convince your model to leak PII.
-
-Tab 4: Telemetry
-
-View Drift Graphs to prove to stakeholders that "Safety Improved by 15% this week."
-
-Deep dive into Phoenix to debug why a specific prompt failed.
-
-📂 Project Structure
-
-File
-
-Purpose
-
-dashboard.py
-
-The main Streamlit GUI (v2.5).
-
-llm_tests/providers.py
-
-The Universal Engine connecting to all APIs.
-
-start_telemetry.py
-
-Persistent database launcher for Phoenix.
-
-tests/conftest.py
-
-Pytest hooks for DeepEval and Telemetry.
-
-prompts.yaml
-
-Your saved library of Golden Prompts.
-
-arena_battles.csv
-
-Log of all Side-by-Side comparisons.
-
-🔮 Future Roadmap
-
-[ ] Wearables Simulator: Context-constrained testing for edge devices.
-
-[ ] RAG Hallucination Index: Automated retrieval checking.
-
-[ ] Voice-to-Voice Injection: Direct audio file attacks (WAV/MP3).
-
-Built with 💜 by [vcommits]
+3. Launch the Command Center:
+```bash
+streamlit run dashboard.py
+```
