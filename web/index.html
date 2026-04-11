@@ -6,20 +6,31 @@
     <title>GHIDORAH // NODE X // ARENA MATCHMAKER</title>
     <style>
         :root {
-            --accent-green: #00ff41;
-            --accent-cyan: #00f3ff;
-            --glass-bg: rgba(10, 10, 15, 0.92);
+            /* CSS VIBE & TOKENS */
+            --accent-green: #00ff41; /* The API Affirmation Lock */
+            --accent-cyan: #00f3ff; /* The Mesh Link */
+            --glass-bg: rgba(10, 10, 15, 0.92); /* The depth for 2011 iMac rendering */
             --border-color: rgba(255, 255, 255, 0.2);
             --text-color: #EAEAEA;
             --disabled-opacity: 0.15;
+
+            /* Dynamic UI "AUDITIONING" */
+            --font-header: 'Bebas Neue', sans-serif;
+            --font-data: 'Menlo', 'Consolas', monospace;
+            --bg-texture: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Hn3AAAAAXNSR0IArs4c6QAAABJJREFUGFdjYGBgYGBgYGBgAAABAAP8/7/Z2AAAAAElFTkSuQmCC'); /* Small subtle noise */
+            --bg-gif: none; /* Placeholder for dynamic GIF background */
         }
 
         body {
             background-color: #050505;
             color: var(--text-color);
-            font-family: 'Menlo', 'Consolas', monospace;
+            font-family: var(--font-data);
             margin: 0;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
         }
 
         /* 1. POSTMAN SIDEBAR */
@@ -32,20 +43,28 @@
             background: var(--glass-bg);
             backdrop-filter: blur(10px);
             border-right: 1px solid var(--border-color);
-            transform: translateX(-400px);
-            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            transform: translateX(-400px); /* Start hidden */
+            transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1); /* Sidebar transition */
             padding: 20px;
+            box-sizing: border-box;
             z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        #postman-sidebar.open {
+            transform: translateX(0);
         }
 
         .picker-step {
-            margin-bottom: 15px;
             padding: 15px;
             border: 1px solid var(--border-color);
             border-radius: 5px;
             opacity: var(--disabled-opacity);
             pointer-events: none;
-            transition: opacity 0.3s ease-in-out, box-shadow 200ms ease-in;
+            transition: opacity 0.3s ease-in-out, box-shadow 200ms ease-in; /* Green pulse transition */
+            background-color: rgba(0,0,0,0.2);
         }
 
         .picker-step.active {
@@ -62,29 +81,45 @@
         }
 
         /* 2. ARENA GRID */
+        #arena-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding-left: 40px; /* Offset for closed sidebar */
+            transition: padding-left 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        #postman-sidebar.open ~ #arena-container {
+            padding-left: 420px; /* Offset for open sidebar */
+        }
+
         #arena-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Responsive grid */
             gap: 20px;
             padding: 20px;
-            margin-left: 40px; /* To avoid being under the closed sidebar */
+            flex-grow: 1;
+            overflow-y: auto; /* Allow scrolling if many slots */
         }
 
         .fighter-slot {
-            height: 200px;
+            min-height: 150px;
             border: 2px dashed var(--border-color);
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             opacity: 0.4;
-            transition: opacity 0.3s, border-color 0.3s;
+            transition: opacity 0.3s, border-color 0.3s, background-color 0.3s, border-top 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
         .fighter-slot.active {
             opacity: 1;
-            border-top: 4px solid var(--accent-cyan);
+            border-top: 4px solid var(--accent-cyan); /* Unique HSL border-top */
             border-style: solid;
             background: rgba(0, 243, 255, 0.05);
         }
@@ -92,32 +127,110 @@
         .fighter-slot-text {
             color: var(--text-color);
             font-size: 14px;
+            z-index: 1;
         }
 
-        /* 3. GENERAL UI */
-        h2 {
-            font-family: 'Bebas Neue', sans-serif; /* Assuming you might add this font */
+        /* Command Box */
+        #command-section {
+            padding: 20px;
+            background: var(--glass-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #cmd-box {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: rgba(0,0,0,0.4);
+            color: var(--text-color);
+            font-family: var(--font-data);
+            font-size: 16px;
+            resize: vertical; /* Allow vertical resizing */
+            min-height: 40px;
+            max-height: 200px;
+        }
+
+        #cmd-box:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 243, 255, 0.3);
+        }
+
+        #dispatch-btn {
+            padding: 10px 20px;
+            background-color: var(--accent-cyan);
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: var(--font-header);
+            font-size: 18px;
+            letter-spacing: 1px;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            flex-shrink: 0;
+        }
+
+        #dispatch-btn:hover {
+            background-color: #00e0ef;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        /* General UI elements */
+        h2, h3 {
+            font-family: var(--font-header);
             color: var(--accent-cyan);
             letter-spacing: 1px;
+            margin-top: 0;
+            margin-bottom: 10px;
         }
 
-        select, button {
+        select {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             background: rgba(0,0,0,0.4);
             color: var(--text-color);
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            font-family: inherit;
-            font-size: 16px;
+            font-family: var(--font-data);
+            font-size: 14px;
             cursor: pointer;
+            appearance: none; /* Remove default select arrow */
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23eaeaea%22%20d%3D%22M287%2C114.7L159.9%2C241.8c-3.2%2C3.2-8.3%2C3.2-11.6%2C0L5.4%2C114.7c-3.2-3.2-3.2-8.3%2C0-11.6l11.6-11.6c3.2-3.2%2C8.3-3.2%2C11.6%2C0l124.9%2C124.9l124.9-124.9c3.2-3.2%2C8.3-3.2%2C11.6%2C0l11.6%2C11.6C290.2%2C106.4%2C290.2%2C111.5%2C287%2C114.7z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 12px;
         }
 
-        button {
-            background-color: var(--accent-cyan);
-            color: #000;
-            font-weight: bold;
+        select:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
+
+        /* Toggle button for sidebar (for testing/dev) */
+        #toggle-sidebar-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: auto;
+            z-index: 200;
+            background-color: rgba(255,255,255,0.1);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: var(--font-data);
+            font-size: 14px;
+        }
+        #toggle-sidebar-btn:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
     </style>
 </head>
 <body>
@@ -129,7 +242,7 @@
         <!-- STEP 01: PROVIDER -->
         <div id="step-01" class="picker-step active">
             <h3>01: Provider</h3>
-            <select id="provider-select" onchange="ui.handleSelect('provider', this.value)">
+            <select id="provider-select" onchange="window.ui.handleSelect('provider', this.value)">
                 <option value="">-- Select Provider --</option>
             </select>
         </div>
@@ -137,7 +250,7 @@
         <!-- STEP 02: TYPE (MODALITY) -->
         <div id="step-02" class="picker-step">
             <h3>02: Type (Modality)</h3>
-            <select id="type-select" onchange="ui.handleSelect('type', this.value)">
+            <select id="type-select" onchange="window.ui.handleSelect('type', this.value)">
                 <option value="">-- Select Type --</option>
             </select>
         </div>
@@ -145,7 +258,7 @@
         <!-- STEP 03: TIER (PERFORMANCE/COST) -->
         <div id="step-03" class="picker-step">
             <h3>03: Tier</h3>
-            <select id="tier-select" onchange="ui.handleSelect('tier', this.value)">
+            <select id="tier-select" onchange="window.ui.handleSelect('tier', this.value)">
                 <option value="">-- Select Tier --</option>
             </select>
         </div>
@@ -153,48 +266,82 @@
         <!-- STEP 04: MODEL -->
         <div id="step-04" class="picker-step">
             <h3>04: Model</h3>
-            <select id="model-select" onchange="ui.handleSelect('model', this.value)">
+            <select id="model-select" onchange="window.ui.handleSelect('model', this.value)">
                 <option value="">-- Select Model --</option>
             </select>
         </div>
     </aside>
 
-    <!-- 2. THE ARENA GRID -->
-    <main id="arena-grid">
-        <div id="slot-0" class="fighter-slot">
-            <span class="fighter-slot-text">AWAITING_SUMMON</span>
-        </div>
-        <div id="slot-1" class="fighter-slot">
-            <span class="fighter-slot-text">AWAITING_SUMMON</span>
-        </div>
-        <div id="slot-2" class="fighter-slot">
-            <span class="fighter-slot-text">AWAITING_SUMMON</span>
-        </div>
-        <div id="slot-3" class="fighter-slot">
-            <span class="fighter-slot-text">AWAITING_SUMMON</span>
-        </div>
-        <div id="slot-4" class="fighter-slot">
-            <span class="fighter-slot-text">AWAITING_SUMMON</span>
-        </div>
-    </main>
+    <div id="arena-container">
+        <!-- 2. THE ARENA GRID -->
+        <main id="arena-grid">
+            <div id="slot-0" class="fighter-slot">
+                <span class="fighter-slot-text">AWAITING_SUMMON</span>
+            </div>
+            <div id="slot-1" class="fighter-slot">
+                <span class="fighter-slot-text">AWAITING_SUMMON</span>
+            </div>
+            <div id="slot-2" class="fighter-slot">
+                <span class="fighter-slot-text">AWAITING_SUMMON</span>
+            </div>
+            <div id="slot-3" class="fighter-slot">
+                <span class="fighter-slot-text">AWAITING_SUMMON</span>
+            </div>
+            <div id="slot-4" class="fighter-slot">
+                <span class="fighter-slot-text">AWAITING_SUMMON</span>
+            </div>
+        </main>
 
-    <!-- A button to toggle the sidebar for testing -->
-    <button onclick="ui.toggleSidebar()" style="position: fixed; top: 20px; right: 20px; width: auto; z-index: 200;">Toggle Menu</button>
+        <!-- 3. COMMAND BOX & DISPATCH -->
+        <div id="command-section">
+            <textarea id="cmd-box" placeholder="Inject payload... (Shift+Enter for new line)" rows="1"></textarea>
+            <button id="dispatch-btn">DISPATCH</button>
+        </div>
+    </div>
 
-    <!-- 3. SCRIPT INTEGRATION -->
+    <!-- Toggle button for sidebar (for testing/dev) -->
+    <button id="toggle-sidebar-btn">Toggle Sidebar</button>
+
+    <!-- 5. SCRIPT INTEGRATION -->
     <script type="module">
-        // Use relative paths from web/ to core/
         import { Matchmaker } from '../core/Matchmaker.js';
         import { ArenaUI } from '../core/ArenaUI.js';
 
-        // The manifest path is also relative to the HTML file's location
         const matchmaker = new Matchmaker('../core/manifest.json');
-
-        // Make the UI instance globally accessible for inline event handlers
         window.ui = new ArenaUI(matchmaker);
 
-        // Initialize the application
-        window.ui.initialize();
+        window.ui.initialize(); // Initialize UI components and event listeners
+
+        // Keyboard Trigger for #cmd-box
+        const cmdBox = document.getElementById('cmd-box');
+        cmdBox.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent default Enter behavior (new line)
+                window.ui.dispatchFight(this.value); // Call dispatch method
+                this.value = ''; // Clear textarea
+            }
+            // If Shift+Enter, allow default (new line)
+        });
+
+        // Dispatch button click handler
+        document.getElementById('dispatch-btn').addEventListener('click', () => {
+            window.ui.dispatchFight(cmdBox.value);
+            cmdBox.value = '';
+        });
+
+        // Sidebar toggle button for development/testing
+        document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
+            document.getElementById('postman-sidebar').classList.toggle('open');
+        });
+
+        // Adjust cmd-box height dynamically
+        cmdBox.addEventListener('input', () => {
+            cmdBox.style.height = 'auto';
+            cmdBox.style.height = (cmdBox.scrollHeight) + 'px';
+        });
+        // Initial height adjustment
+        cmdBox.style.height = (cmdBox.scrollHeight) + 'px';
+
     </script>
 
 </body>
