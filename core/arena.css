@@ -1,76 +1,65 @@
-/*
-    ARENA.CSS - KAIJU NOIR AESTHETIC
-    Part of the OOP-GLASSDESK Architecture for Node X.
-*/
+/**
+ * GHIDORAH // CORE // ARENA STYLES
+ * Handles the Bloom, Affirmation, and Card transition logic.
+ */
 
-:root {
-    --accent-green: #00ff41;
-    --glass-bg: rgba(10, 10, 10, 0.65);
-    --text-color: #EAEAEA;
-    --border-color: rgba(255, 255, 255, 0.2);
-    --disabled-opacity: 0.15;
-}
-
-body {
-    background-color: #050505;
-    color: var(--text-color);
-    font-family: 'Menlo', 'Consolas', monospace;
-}
-
-.postman-foldout {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 400px;
-    height: 100vh;
-    background: var(--glass-bg);
-    backdrop-filter: blur(10px);
-    border-right: 1px solid var(--border-color);
-    transform: translateX(-400px);
-    transition: transform 300ms ease-out; /* For 2011 CPU efficiency */
-    padding: 20px;
-}
-
-.discovery-tier {
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color);
-    padding: 10px;
-    border-radius: 5px;
-    transition: opacity 300ms ease-in-out;
-}
-
-.discovery-tier.disabled {
-    opacity: var(--disabled-opacity);
+/* THE 4-TIER BLOOM EFFECT */
+.picker-step {
+    opacity: 0.15;
     pointer-events: none;
+    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    border-left: 4px solid transparent;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.01);
 }
 
-select, button {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 10px;
-    border-radius: 3px;
-    font-family: inherit;
+.picker-step.active {
+    opacity: 1;
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.04);
 }
 
-select:disabled {
-    opacity: 0.5;
+/* GREEN AFFIRMATION API (200ms lock) */
+.picker-step.confirmed {
+    border-left-color: var(--accent-green);
+    background: linear-gradient(90deg, rgba(0, 255, 65, 0.08) 0%, transparent 100%);
+    transition: border-color 0.2s ease-in, background 0.2s ease-in;
 }
 
-/* Green Affirmation API Pulse */
-.green-pulse {
-    transition: box-shadow 200ms ease-in;
-    box-shadow: 0 0 10px 3px var(--accent-green);
+.selection-glow {
+    text-shadow: 0 0 12px var(--accent-green);
+    color: var(--accent-green) !important;
 }
 
-/* Shredder Animation Placeholder */
-.shred-animation {
-    /* Define the vertical strip-shred animation */
-    animation: shred 0.5s forwards;
+/* FIGHTER CARDS */
+.fighter-card {
+    transition: transform 0.3s ease, border-color 0.3s ease, opacity 0.5s ease;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-@keyframes shred {
-    0% { transform: translateY(0) scale(1); opacity: 1; }
-    100% { transform: translateY(100%) scale(0.1); opacity: 0; }
+.fighter-card.active {
+    opacity: 1;
+    border-top-width: 5px;
+}
+
+/* THE SHREDDER */
+.shredding {
+    animation: shred-v 0.6s forwards cubic-bezier(0.6, -0.28, 0.735, 0.045);
+}
+
+@keyframes shred-v {
+    0% { transform: translateY(0); clip-path: inset(0 0 0 0); }
+    100% { transform: translateY(100vh); opacity: 0; clip-path: inset(0 0 100% 0); }
+}
+
+/* STREAMING TEXT PULSE */
+.streaming-pulse {
+    color: var(--accent-cyan);
+    text-shadow: 0 0 8px var(--accent-cyan);
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }

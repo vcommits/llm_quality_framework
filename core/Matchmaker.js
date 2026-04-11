@@ -1,100 +1,46 @@
 /**
- * Matchmaker Class
- *
- * Handles the 4-tier discovery logic for LLM models based on the OOP-GLASSDESK architecture.
- * It filters models from a manifest to prevent "Ghost Model" summons and ensures "Like-for-Like" combat.
+ * GHIDORAH // CORE // MATCHMAKER
+ * Handles the 4-tier discovery logic: Provider -> Type -> Tier -> Model.
  */
-class Matchmaker {
-    constructor(manifest) {
-        this.manifest = manifest;
-        this.activeWeightclass = null;
+export class Matchmaker {
+    constructor(manifestUrl) {
+        this.manifestUrl = manifestUrl;
+        this.models = [];
+        this.selection = { provider: null, type: null, tier: null, model: null };
+        this.activeWeightclass = null; // Locks after first fighter commitment
     }
 
-    /**
-     * Filters models from the manifest where status is 'online'.
-     * @returns {Array} A list of online models.
-     */
-    hydrate() {
-        return this.manifest.filter(model => model.status === 'online');
-    }
-
-    /**
-     * Gets a unique list of providers from the online models.
-     * @returns {Array<string>}
-     */
-    getProviders() {
-        const onlineModels = this.hydrate();
-        const providers = new Set(onlineModels.map(model => model.provider));
-        return [...providers];
-    }
-
-    /**
-     * Gets a unique list of types for a given provider.
-     * @param {string} provider
-     * @returns {Array<string>}
-     */
-    getTypes(provider) {
-        const onlineModels = this.hydrate();
-        const types = new Set(
-            onlineModels
-                .filter(model => model.provider === provider)
-                .map(model => model.type)
-        );
-        return [...types];
-    }
-
-    /**
-     * Gets a unique list of tiers for a given provider and type.
-     * @param {string} provider
-     * @param {string} type
-     * @returns {Array<string>}
-     */
-    getTiers(provider, type) {
-        const onlineModels = this.hydrate();
-        const tiers = new Set(
-            onlineModels
-                .filter(model => model.provider === provider && model.type === type)
-                .map(model => model.tier)
-        );
-        return [...tiers];
-    }
-
-    /**
-     * Gets models based on the selected filters.
-     * If an activeWeightclass is set, it further filters by that.
-     * @param {string} provider
-     * @param {string} type
-     * @param {string} tier
-     * @returns {Array}
-     */
-    getModels(provider, type, tier) {
-        let models = this.hydrate().filter(model =>
-            model.provider === provider &&
-            model.type === type &&
-            model.tier === tier
-        );
-
-        if (this.activeWeightclass) {
-            models = models.filter(model => model.type === this.activeWeightclass);
+    async hydrate() {
+        try {
+            const response = await fetch(this.manifestUrl);
+            const data = await response.json();
+            // FILTER: Only show 'online' models (No Ghost Summons)
+            this.models = (data.models || []).filter(m => m.status === 'online');
+            return true;
+        } catch (e) {
+            console.error("SENTRY: Manifest Hydration Error.", e);
+            return false;
         }
-
-        return models;
     }
 
-    /**
-     * Locks the arena to a specific weightclass (type).
-     * @param {string} weightclass
-     */
-    lockWeightclass(weightclass) {
-        this.activeWeightclass = weightclass;
-        console.log(`Weightclass locked to: ${this.activeWeightclass}`);
+    getOptions(level) {
+        const s = this.selection;
+        // Filter based on previous choices and Weightclass Lock
+        const pool = this.models.filter(m =>
+            (!this.activeWeightclass || m.weightclass === this.activeWeightclass) &&
+            (level === 'provider' || m.provider === s.provider) &&
+            (level === 'type' || (m.provider === s.provider && m.type === s.type))
+        );
+
+        if (level === 'provider') return [...new Set(pool.map(m => m.provider))];
+        if (level === 'type') return [...new Set(pool.filter(m => m.provider === s.provider).map(m => m.type))];
+        if (level === 'tier') return [...new Set(pool.filter(m => m.provider === s.provider && m.type === s.type).map(m => m.tier))];
+        if (level === 'model') return pool.filter(m => m.provider === s.provider && m.type === s.type && m.tier === s.tier);
+
+        return [];
     }
 
-    /**
-     * Resets the weightclass lock.
-     */
-    resetWeightclass() {
-        this.activeWeightclass = null;
-        console.log('Weightclass lock has been reset.');
+    reset() {
+        this.selection = { provider: null, type: null, tier: null, model: null };
     }
 }

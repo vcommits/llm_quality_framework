@@ -23,6 +23,9 @@
 
         body {
             background-color: #050505;
+            background-image: var(--bg-texture), var(--bg-gif);
+            background-size: auto, cover;
+            background-position: center, center;
             color: var(--text-color);
             font-family: var(--font-data);
             margin: 0;
@@ -211,13 +214,17 @@
             cursor: not-allowed;
         }
 
-        /* Toggle button for sidebar (for testing/dev) */
-        #toggle-sidebar-btn {
+        /* Dev buttons container */
+        .dev-buttons {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: auto;
             z-index: 200;
+            display: flex;
+            gap: 10px;
+        }
+
+        .dev-btn {
             background-color: rgba(255,255,255,0.1);
             color: var(--text-color);
             border: 1px solid var(--border-color);
@@ -227,7 +234,7 @@
             font-family: var(--font-data);
             font-size: 14px;
         }
-        #toggle-sidebar-btn:hover {
+        .dev-btn:hover {
             background-color: rgba(255,255,255,0.2);
         }
 
@@ -299,13 +306,17 @@
         </div>
     </div>
 
-    <!-- Toggle button for sidebar (for testing/dev) -->
-    <button id="toggle-sidebar-btn">Toggle Sidebar</button>
+    <!-- Dev buttons for testing -->
+    <div class="dev-buttons">
+        <button id="toggle-sidebar-btn" class="dev-btn">Toggle Sidebar</button>
+        <button id="cycle-mood-btn" class="dev-btn">Cycle Mood</button>
+    </div>
 
     <!-- 5. SCRIPT INTEGRATION -->
     <script type="module">
         import { Matchmaker } from '../core/Matchmaker.js';
         import { ArenaUI } from '../core/ArenaUI.js';
+        import { AssetManager } from '../core/AssetManager.js'; // Import AssetManager
 
         const matchmaker = new Matchmaker('../core/manifest.json');
         window.ui = new ArenaUI(matchmaker);
@@ -320,7 +331,6 @@
                 window.ui.dispatchFight(this.value); // Call dispatch method
                 this.value = ''; // Clear textarea
             }
-            // If Shift+Enter, allow default (new line)
         });
 
         // Dispatch button click handler
@@ -332,6 +342,11 @@
         // Sidebar toggle button for development/testing
         document.getElementById('toggle-sidebar-btn').addEventListener('click', () => {
             document.getElementById('postman-sidebar').classList.toggle('open');
+        });
+
+        // Mood cycle button
+        document.getElementById('cycle-mood-btn').addEventListener('click', () => {
+            window.ui.cycleMood();
         });
 
         // Adjust cmd-box height dynamically
