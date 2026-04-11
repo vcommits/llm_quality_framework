@@ -1,0 +1,44 @@
+[
+    {
+        "provider": "Google",
+        "type": "CODE",
+        "tier": "Small/Flash",
+        "model": "Gemini 1.5 Flash",
+        "status": "online"
+    },
+    {
+        "provider": "Google",
+        "type": "LOGIC",
+        "tier": "Medium/Pro",
+        "model": "Gemini 1.5 Pro",
+        "status": "online"
+    },
+    {
+        "provider": "Anthropic",
+        "type": "LOGIC",
+        "tier": "Large/Opus",
+        "model": "Claude 3 Opus",
+        "status": "online"
+    },
+    {
+        "provider": "Anthropic",
+        "type": "LOGIC",
+        "tier": "Small/Flash",
+        "model": "Claude 3 Haiku",
+        "status": "offline"
+    },
+    {
+        "provider": "Together AI",
+        "type": "CODE",
+        "tier": "Medium/Pro",
+        "model": "Code Llama 70B",
+        "status": "online"
+    },
+    {
+        "provider": "Open Router",
+        "type": "UNCONSTITUTIONAL",
+        "tier": "Medium/Pro",
+        "model": "Some Unfiltered Model",
+        "status": "online"
+    }
+]

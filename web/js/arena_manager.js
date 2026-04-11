@@ -1,6 +1,6 @@
 /**
  * ARENA MANAGER: "Gladiator Pit" Logic
- * Manages the list of contestants and the two-tier selection flow.
+ * Manages the dynamic list of contestants for multi-model battles.
  */
 class ArenaManager {
     constructor(maxContestants = 5) {
@@ -18,30 +18,27 @@ class ArenaManager {
             return;
         }
 
-        const id = `fighter-${this.contestants.length}`;
+        const id = `fighter-${Date.now()}`;
         const slot = document.createElement('div');
         slot.className = 'fighter-slot';
         slot.id = id;
-
-        // Simplified two-tier dropdown for now
+        
+        // Two-tier dropdown logic will be handled by the main script's boot sequence
         slot.innerHTML = `
-            <select class="fighter-select" data-id="${id}">
-                <!-- Options hydrated by main script -->
-            </select>
-            <button type="button" class="remove-fighter-btn" data-id="${id}">X</button>
+            <div class="fighter-card">
+                <select class="fighter-provider-select" data-id="${id}"></select>
+                <select class="fighter-model-select" data-id="${id}"></select>
+                <button type="button" class="remove-fighter-btn" data-id="${id}">X</button>
+            </div>
         `;
 
         this.container.appendChild(slot);
-        const select = slot.querySelector('select');
-        
-        // Populate with models
-        window.modelRegistry.forEach(m => {
-            select.appendChild(new Option(m.name, m.id));
-        });
-
-        if(modelId) select.value = modelId;
-
-        const contestant = { id, selectElement: select };
+        const contestant = { 
+            id, 
+            element: slot,
+            providerSelect: slot.querySelector('.fighter-provider-select'),
+            modelSelect: slot.querySelector('.fighter-model-select')
+        };
         this.contestants.push(contestant);
 
         slot.querySelector('.remove-fighter-btn').addEventListener('click', () => this.removeContestant(id));
@@ -49,6 +46,7 @@ class ArenaManager {
         if (this.contestants.length >= this.maxContestants) {
             this.addBtn.disabled = true;
         }
+        return contestant;
     }
 
     removeContestant(id) {
@@ -60,32 +58,6 @@ class ArenaManager {
     }
 
     getActiveModels() {
-        return this.contestants.map(c => c.selectElement.value);
-    }
-}
-
-class TransitionManager {
-    constructor() {
-        this.queue = [];
-    }
-
-    scheduleForProbe(modelId) {
-        if (!this.queue.includes(modelId)) {
-            this.queue.push(modelId);
-            // In a real UI, you'd update a draggable list here
-            console.log(`Queued for Interactive Probe: ${modelId}`);
-        }
-    }
-
-    finishArena() {
-        if (this.queue.length > 0) {
-            const nextModel = this.queue.shift();
-            console.log(`Transitioning to Interactive Probe with ${nextModel}`);
-            // Here you would save session and switch tabs
-            // For now, we just log it.
-            alert(`Pivoting to Interactive Probe with ${nextModel}`);
-        } else {
-            alert("Arena session finished. No models queued for probe.");
-        }
+        return this.contestants.map(c => c.modelSelect.value);
     }
 }
