@@ -1,0 +1,28 @@
+{
+  "provider": "Hugging Face",
+  "models": [
+    {
+      "name": "Zephyr 141B-A35B",
+      "model_id": "HuggingFaceH4/zephyr-141b-a35b-beta",
+      "category": "chat",
+      "specs": {
+        "provider": "Hugging Face",
+        "context_window": "64k",
+        "parameters": "141B (35B active)",
+        "kind": "Mixture-of-Experts"
+      },
+      "agent_role": "Flagship open-source model for general purpose reasoning and chat."
+    },
+    {
+      "name": "Gemma 2 9B",
+      "model_id": "google/gemma-2-9b-it",
+      "category": "chat",
+      "specs": {
+        "provider": "Google",
+        "context_window": "8k",
+        "parameters": "9B"
+      },
+      "agent_role": "High-performance, general-purpose model from Google."
+    }
+  ]
+}

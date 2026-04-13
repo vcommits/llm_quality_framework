@@ -1,0 +1,81 @@
+{
+  "provider": "DeepInfra",
+  "models": [
+    {
+      "name": "GLM-5.1",
+      "model_id": "zai-org/GLM-5.1",
+      "pricing": { "uncached_input_1M": 1.40, "cached_input_1M": 0.26, "output_1M": 4.40 },
+      "specs": { "context_window": "198k", "precision": "fp8", "provider": "Z-AI" },
+      "agent_role": "Flagship agentic model. Optimized for terminal tasks and repo-level engineering."
+    },
+    {
+      "name": "Step-3.5-Flash",
+      "model_id": "stepfun-ai/Step-3.5-Flash",
+      "pricing": { "uncached_input_1M": 0.10, "cached_input_1M": 0.02, "output_1M": 0.30 },
+      "specs": { "context_window": "256k", "precision": "fp8", "provider": "StepFun" },
+      "agent_role": "High-speed reasoning model with deep tool-calling and agentic capabilities."
+    },
+    {
+      "name": "Qwen3.5-397B-A17B",
+      "model_id": "Qwen/Qwen3.5-397B-A17B",
+      "pricing": { "uncached_input_1M": 0.54, "cached_input_1M": 0.27, "output_1M": 3.40 },
+      "specs": { "context_window": "256k", "precision": "fp8", "provider": "Alibaba" },
+      "agent_role": "SOTA reasoning and math specialist with MCP tool-calling integration."
+    },
+    {
+      "name": "Qwen3.5-122B-A10B",
+      "model_id": "Qwen/Qwen3.5-122B-A10B",
+      "pricing": { "uncached_input_1M": 0.29, "cached_input_1M": 0.145, "output_1M": 2.90 },
+      "specs": { "context_window": "256k", "precision": "fp8" },
+      "agent_role": "Efficient large-scale MoE for complex multimodal and agentic tasks."
+    },
+    {
+      "name": "Qwen3.5-35B-A3B",
+      "model_id": "Qwen/Qwen3.5-35B-A3B",
+      "pricing": { "uncached_input_1M": 0.22, "cached_input_1M": 0.11, "output_1M": 2.20 },
+      "specs": { "context_window": "256k", "precision": "fp8" }
+    },
+    {
+      "name": "NVIDIA Nemotron 3 Super 120B-A12B",
+      "model_id": "nvidia/NVIDIA-Nemotron-3-Super-120B-A12B",
+      "pricing": { "uncached_input_1M": 0.10, "output_1M": 0.50 },
+      "specs": { "context_window": "256k", "precision": "bf16" },
+      "agent_role": "Engineered for multi-agent orchestration; high accuracy for tool-use."
+    },
+    {
+      "name": "Qwen3-Max-Thinking",
+      "model_id": "Qwen/Qwen3-Max-Thinking",
+      "pricing": { "uncached_input_1M": 1.20, "cached_input_1M": 0.24, "output_1M": 6.00 },
+      "specs": { "context_window": "250k", "kind": "Reasoning" },
+      "agent_role": "Flagship reasoning; uses adaptive tool-use and test-time scaling."
+    },
+    {
+      "name": "Kimi-K2.5",
+      "model_id": "moonshotai/Kimi-K2.5",
+      "pricing": { "uncached_input_1M": 0.45, "cached_input_1M": 0.07, "output_1M": 2.25 },
+      "specs": { "context_window": "256k", "modalities": ["Multimodal"] },
+      "agent_role": "Native multimodal agentic model; best for vision-integrated workflows."
+    },
+    {
+      "name": "Nemotron-3-Nano-30B-A3B",
+      "model_id": "nvidia/Nemotron-3-Nano-30B-A3B",
+      "pricing": { "input_1M": 0.05, "output_1M": 0.20 },
+      "specs": { "context_window": "256k", "precision": "fp4", "architecture": "Hybrid MoE/Mamba-Transformer" },
+      "agent_role": "Optimized for fast, cost-efficient reasoning in production workloads."
+    },
+    {
+      "name": "DeepSeek-V3.2",
+      "model_id": "deepseek-ai/DeepSeek-V3.2",
+      "pricing": { "uncached_input_1M": 0.26, "cached_input_1M": 0.13, "output_1M": 0.38 },
+      "specs": { "context_window": "160k", "precision": "fp4" },
+      "agent_role": "SOTA reasoning and tool-use performance in the GPT-5 class."
+    },
+    {
+      "name": "Seed-2.0-pro",
+      "model_id": "ByteDance/Seed-2.0-pro",
+      "pricing": { "uncached_input_1M": 0.50, "cached_input_1M": 0.10, "output_1M": 3.00 },
+      "specs": { "context_window": "250k" },
+      "agent_role": "Built for the 'Agent Era'; stable in complex, long-horizon reasoning tasks."
+    }
+  ]
+}

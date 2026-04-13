@@ -1,0 +1,101 @@
+{
+  "provider": "Fireworks AI",
+  "models": [
+    {
+      "name": "MiniMax M2.7",
+      "model_id": "accounts/fireworks/models/minimax-m2p7",
+      "pricing": { "uncached_input_1M": 0.30, "cached_input_1M": 0.06, "output_1M": 1.20 },
+      "specs": { "kind": "Base model", "mixture_of_experts": true, "parameters": "228B", "context_window": "196k", "status": "NEW" },
+      "capabilities": "Optimized for agent harnesses and dynamic tool search."
+    },
+    {
+      "name": "Qwen3.6 Plus",
+      "model_id": "accounts/fireworks/models/qwen-3p6-plus",
+      "pricing": { "uncached_input_1M": 0.50, "cached_input_1M": 0.10, "output_1M": 3.00 },
+      "specs": { "kind": "Chat model", "context_window": "262k", "modalities": ["Text", "Vision"], "status": "NEW" }
+    },
+    {
+      "name": "GLM 5.1",
+      "model_id": "accounts/fireworks/models/glm-5p1",
+      "pricing": { "uncached_input_1M": 1.40, "cached_input_1M": 0.26, "output_1M": 4.40 },
+      "specs": { "kind": "Chat model", "context_window": "202k", "status": "NEW" }
+    },
+    {
+      "name": "Kimi K2.5",
+      "model_id": "accounts/fireworks/models/kimi-k2p5",
+      "pricing": { "uncached_input_1M": 0.60, "cached_input_1M": 0.10, "output_1M": 3.00 },
+      "specs": { "kind": "Chat model", "context_window": "262k", "modalities": ["Text", "Vision"] }
+    },
+    {
+      "name": "DeepSeek V3.2",
+      "model_id": "accounts/fireworks/models/deepseek-v3p2",
+      "pricing": { "uncached_input_1M": 0.56, "cached_input_1M": 0.28, "output_1M": 1.68 },
+      "specs": { "context_window": "163k" }
+    },
+    {
+      "name": "Gemma 4 26B A4B IT",
+      "model_id": "accounts/fireworks/models/gemma-4-26b-a4b-it",
+      "specs": { "provider": "Google DeepMind", "kind": "Base model", "mixture_of_experts": true, "parameters": "25.2B (3.8B active)", "context_window": "262k", "modalities": ["Text", "Image"], "thinking_mode": "Configurable" }
+    },
+    {
+      "name": "Llama 3.3 70B Instruct",
+      "model_id": "accounts/fireworks/models/llama-v3p3-70b-instruct",
+      "pricing": { "uncached_input_1M": 0.90, "cached_input_1M": 0.45, "output_1M": 0.90 },
+      "specs": { "provider": "Meta", "kind": "Chat model", "parameters": "70B", "context_window": "131k", "function_calling": "Supported" }
+    },
+    {
+      "name": "FireFunction V2",
+      "model_id": "accounts/fireworks/models/firefunction-v2",
+      "pricing": { "uncached_input_1M": 0.90, "cached_input_1M": 0.45, "output_1M": 0.90 },
+      "specs": { "provider": "Fireworks", "kind": "Fine-tuned", "parameters": "70B", "context_window": "32k", "function_calling": "Optimized" }
+    },
+    {
+      "name": "Qwen2.5 72B Instruct",
+      "model_id": "accounts/fireworks/models/qwen2p5-72b-instruct",
+      "pricing": { "uncached_input_1M": 0.90, "cached_input_1M": 0.45, "output_1M": 0.90 },
+      "specs": { "provider": "Alibaba GWS", "kind": "Chat model", "parameters": "72B", "context_window": "128k", "function_calling": "Supported" }
+    },
+    {
+      "name": "Gemma 4 31B IT",
+      "model_id": "accounts/fireworks/models/gemma-4-31b-it",
+      "specs": { "provider": "Google", "context_window": "262k", "modalities": ["Text", "Vision"], "status": "NEW" },
+      "agent_role": "Visual browser parsing and high-density reasoning."
+    },
+    {
+      "name": "Qwen3.5 397B A17B",
+      "model_id": "accounts/fireworks/models/qwen3p5-397b-a17b",
+      "specs": { "provider": "Alibaba GWS", "context_window": "262k", "modalities": ["Text", "Vision"] },
+      "agent_role": "Large-scale MoE for handling massive DOM structures."
+    },
+    {
+      "name": "GLM-5",
+      "model_id": "accounts/fireworks/models/glm-5",
+      "pricing": { "uncached_input_1M": 1.00, "cached_input_1M": 0.20, "output_1M": 3.20 },
+      "specs": { "provider": "Zhipu AI", "context_window": "202k", "type": "Serverless" }
+    },
+    {
+      "name": "Kimi K2 Instruct 0905",
+      "model_id": "accounts/fireworks/models/kimi-k2-instruct-0905",
+      "pricing": { "uncached_input_1M": 0.60, "cached_input_1M": 0.30, "output_1M": 2.50 },
+      "specs": { "provider": "Moonshot AI", "context_window": "262k", "type": "Serverless" }
+    },
+    {
+      "name": "DeepSeek V3.1",
+      "model_id": "accounts/fireworks/models/deepseek-v3p1",
+      "pricing": { "uncached_input_1M": 0.56, "cached_input_1M": 0.28, "output_1M": 1.68 },
+      "specs": { "provider": "DeepSeek AI", "context_window": "163k", "type": "Serverless" }
+    },
+    {
+      "name": "OpenAI gpt-oss-120b",
+      "model_id": "accounts/fireworks/models/gpt-oss-120b",
+      "pricing": { "uncached_input_1M": 0.15, "cached_input_1M": 0.01, "output_1M": 0.60 },
+      "specs": { "provider": "OpenAI", "context_window": "131k", "type": "Serverless" },
+      "notable": "Extremely low cached input pricing ($0.01) for repetitive agent tasks."
+    },
+    {
+      "name": "Qwen3 VL 235B A22B Thinking",
+      "model_id": "accounts/fireworks/models/qwen3-vl-235b-a22b-thinking",
+      "specs": { "provider": "Alibaba GWS", "context_window": "262k", "modalities": ["Text", "Vision"], "features": ["Chain-of-Thought", "Visual Grounding"] }
+    }
+  ]
+}
