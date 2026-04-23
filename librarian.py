@@ -3,6 +3,7 @@
 # API key from Azure Key Vault for the execution node.
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 
@@ -12,14 +13,27 @@ from vault_auth import get_live_secret
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [LIBRARIAN]: %(message)s')
 app = FastAPI(title="Ghidorah Librarian API")
 
-# --- IDENTITY MAP (SYNCHRONIZED WITH AZURE VAULT) ---
-# Maps a hashtag found in a prompt to the dash-cased secret name in Azure Key Vault.
+# --- CORS MIDDLEWARE (CRITICAL FIX) ---
+origins = [
+    "http://localhost",
+    "http://localhost:8000",
+    "null", 
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- IDENTITY MAP ---
 IDENTITY_MAP = {
     "#glider": "PATRONUS-API-KEY",
     "#auditor": "MAILSLURP-API-KEY",
     "#mancer": "MANCER-API-KEY",
     "#eval": "SOLAR-API-KEY",
-    # Adding a generic one for the new provider
     "#deepinfra": "DEEPINFRA-API-KEY"
 }
 
@@ -28,9 +42,6 @@ class PromptRequest(BaseModel):
 
 @app.post("/inject-identity")
 async def inject_identity(request: PromptRequest):
-    """
-    Scans prompt for a known identity hashtag and returns the corresponding secret.
-    """
     logging.info(f"Scanning prompt for identity tags...")
     
     for tag, secret_name in IDENTITY_MAP.items():

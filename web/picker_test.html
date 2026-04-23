@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isolated Model Picker Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="ModelPicker.js" defer></script>
+</head>
+<body class="bg-gray-900 text-gray-200 p-8">
+    <h1 class="text-2xl font-bold text-purple-500 mb-4">Model Picker UX Sandbox</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Provider Selection -->
+        <div class="bg-gray-800 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold mb-2">1. Select Provider</h2>
+            <select id="provider-select" class="w-full bg-gray-700 p-2 rounded">
+                <option value="">-- Select --</option>
+                <!-- Options will be populated by JS -->
+            </select>
+        </div>
+
+        <!-- Model List (The "Firehose") -->
+        <div class="bg-gray-800 p-4 rounded-lg md:col-span-2">
+            <h2 class="text-lg font-semibold mb-2">2. Select Model</h2>
+            <div id="model-list" class="h-64 overflow-y-auto">
+                <p class="text-gray-500">Select a provider to see available models.</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
