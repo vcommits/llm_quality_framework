@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.ghidorah.nodeX.architect</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/caffeinate</string>
+        <string>-ism</string>
+        <string>/usr/local/bin/uvicorn</string>
+        <string>mecha_architect.main:app</string>
+        <string>--host</string>
+        <string>0.0.0.0</string>
+        <string>--port</string>
+        <string>8008</string>
+        <string>--root-path</string>
+        <string>/Users/vincent/ghidorah/mecha_architect</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/ghidorah_nodeX.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/ghidorah_nodeX.log</string>
+</dict>
+</plist>

@@ -3,28 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Isolated Model Picker Test</title>
+    <title>Isolated Model Picker Test (Dashboard Logic)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="ModelPicker.js" defer></script>
 </head>
 <body class="bg-gray-900 text-gray-200 p-8">
     <h1 class="text-2xl font-bold text-purple-500 mb-4">Model Picker UX Sandbox</h1>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Provider Selection -->
-        <div class="bg-gray-800 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold mb-2">1. Select Provider</h2>
-            <select id="provider-select" class="w-full bg-gray-700 p-2 rounded">
-                <option value="">-- Select --</option>
-                <!-- Options will be populated by JS -->
-            </select>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Column 1: Controls -->
+        <div class="bg-gray-800 p-4 rounded-lg space-y-4">
+            <div>
+                <h2 class="text-lg font-semibold mb-2">1. Select Provider</h2>
+                <select id="provider-select" class="w-full bg-gray-700 p-2 rounded">
+                    <option value="">-- Select --</option>
+                </select>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold mb-2">2. Selection Mode</h2>
+                <div class="flex gap-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="selection-mode" value="standard" checked class="form-radio text-purple-500 bg-gray-700">
+                        <span class="ml-2">Standard Tiers</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="selection-mode" value="raw" class="form-radio text-purple-500 bg-gray-700">
+                        <span class="ml-2">Raw Catalog</span>
+                    </label>
+                </div>
+            </div>
+            <div id="tier-selection-container">
+                <h2 class="text-lg font-semibold mb-2">3. Capability Tier</h2>
+                <select id="tier-select" class="w-full bg-gray-700 p-2 rounded">
+                    <!-- Tiers will be populated by JS -->
+                </select>
+            </div>
         </div>
 
-        <!-- Model List (The "Firehose") -->
-        <div class="bg-gray-800 p-4 rounded-lg md:col-span-2">
-            <h2 class="text-lg font-semibold mb-2">2. Select Model</h2>
-            <div id="model-list" class="h-64 overflow-y-auto">
-                <p class="text-gray-500">Select a provider to see available models.</p>
+        <!-- Column 2: Model List / Output -->
+        <div id="model-list-container" class="bg-gray-800 p-4 rounded-lg md:col-span-2">
+            <h2 class="text-lg font-semibold mb-2">Available Models</h2>
+            <div id="model-list" class="h-96 overflow-y-auto">
+                <p class="text-gray-500">Select provider and mode.</p>
             </div>
         </div>
     </div>

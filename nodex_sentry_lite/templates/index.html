@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node X - Sentry Lite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-900 text-gray-300 font-sans">
+
+    <!-- Environmental HUD (The Ticker) -->
+    <div id="environmental-hud"
+         class="fixed bottom-0 left-0 right-0 bg-black/50 backdrop-blur-sm p-2 flex justify-between text-xs font-mono z-50"
+         hx-get="/monitor" hx-trigger="every 2s" hx-swap="innerHTML">
+        <div id="hud-jobs">Connecting to Sentry...</div>
+        <div id="hud-temp"></div>
+    </div>
+
+    <div class="container mx-auto p-4 pb-16"> <!-- Padding bottom to avoid overlap with HUD -->
+        <h1 class="text-3xl font-bold text-cyan-400 mb-6">Node X: Sentry Lite</h1>
+
+        <!-- Emergency Kill Switch -->
+        <div hx-post="/kill-switch" hx-target="#kill-switch-status" hx-swap="innerHTML" class="mb-6">
+            <button class="w-full bg-red-800 hover:bg-red-700 border border-red-500 text-white font-bold py-3 px-4 rounded text-lg">
+                🚨 EMERGENCY KILL SWITCH 🚨
+            </button>
+            <div id="kill-switch-status" class="text-center mt-2"></div>
+        </div>
+
+        <!-- Retooled "Fight!" Arena -->
+        <div class="bg-gray-800/50 backdrop-blur-md p-4 rounded-lg mb-8">
+            <h2 class="text-xl font-semibold text-cyan-400 mb-4">⚔️ Fight! Arena</h2>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                <!-- 5-Model Combat Cards -->
+                <div class="bg-gray-700 p-2 rounded">Model A</div>
+                <div class="bg-gray-700 p-2 rounded">Model B</div>
+                <div class="bg-gray-700 p-2 rounded">Model C</div>
+                <div class="bg-gray-700 p-2 rounded">Model D</div>
+                <div class="bg-gray-700 p-2 rounded">Model E</div>
+            </div>
+            <textarea class="w-full bg-black text-green-300 p-2 rounded mb-2" placeholder="Enter prompt for all 5 models..."></textarea>
+            <button class="w-full bg-cyan-600 text-black font-bold p-2 rounded">Deploy to Arena</button>
+        </div>
+
+        <!-- Postman Lite (Interactive Terminal) -->
+        <div class="bg-gray-800/50 backdrop-blur-md p-4 rounded-lg">
+            <h2 class="text-xl font-semibold text-cyan-400 mb-4">🧪 Postman Lite</h2>
+            <div class="flex space-x-2 mb-4">
+                <!-- Quick-swap Geopolitical Identity -->
+                <select class="flex-1 bg-gray-700 p-2 rounded" hx-post="/geo-swap" hx-trigger="change" name="region">
+                    <option value="us-east-1">Geo-Swap: US-East</option>
+                    <option value="eu-central-1">Geo-Swap: EU-Central</option>
+                    <option value="ap-northeast-1">Geo-Swap: AP-Northeast</option>
+                </select>
+                <!-- Parameter Toggles -->
+                <input type="number" class="w-24 bg-gray-700 p-2 rounded" placeholder="Temp: 0.7">
+                <input type="number" class="w-24 bg-gray-700 p-2 rounded" placeholder="Top-P: 1.0">
+            </div>
+            <div id="postman-history" class="h-48 overflow-y-auto border border-gray-600 p-2 rounded mb-2">
+                <!-- Chat history would go here -->
+            </div>
+            <textarea class="w-full bg-black text-green-300 p-2 rounded mb-2" placeholder="Enter single prompt..."></textarea>
+            <div class="flex space-x-2">
+                <button class="flex-1 bg-cyan-700 text-white p-2 rounded">Send Probe</button>
+                <button class="flex-1 bg-purple-600 text-white p-2 rounded">Save to Mission</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
