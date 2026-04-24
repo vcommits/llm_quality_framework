@@ -59,7 +59,7 @@ async def perform_live_discovery(provider_id: str, api_key: str) -> List[Dict[st
                     models = [{"model_id": m["id"], "name": m["id"], "type": "chat"} for m in res.json().get("data", [])]
             elif provider_id == "huggingface":
                 # Unauthenticated Top-K fetch for demonstration
-                res = await client.get("https://huggingface.co/api/models?pipeline_tag=text-generation&sort=downloads&direction=-1&limit=30")
+                res = await client.get("https://huggingface.co/api/models?pipeline_tag=text-generation&sort=downloads&direction=-1")
                 if res.status_code == 200:
                     models = [{"model_id": m["modelId"], "name": m["modelId"].split('/')[-1], "type": "chat"} for m in res.json()]
             else:

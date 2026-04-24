@@ -43,9 +43,10 @@
         <!-- Column 2: Model List / Output -->
         <div id="model-list-container" class="bg-gray-800 p-4 rounded-lg md:col-span-2">
             <h2 class="text-lg font-semibold mb-2">Available Models</h2>
-            <div id="model-list" class="h-96 overflow-y-auto">
-                <p class="text-gray-500">Select provider and mode.</p>
-            </div>
+            <!-- CORRECTED: This is now a <select> dropdown -->
+            <select id="model-select" class="w-full bg-gray-700 p-2 rounded h-96" multiple>
+                <option class="text-gray-500" disabled>Select a provider to see available models.</option>
+            </select>
         </div>
     </div>
 
