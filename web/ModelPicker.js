@@ -5,74 +5,106 @@ document.addEventListener('DOMContentLoaded', () => {
     const providerSelect = document.getElementById('provider-select');
     const modelListDiv = document.getElementById('model-list');
     const modeRadios = document.querySelectorAll('input[name="selection-mode"]');
+    const standardTierRadio = document.querySelector('input[value="standard"]');
+    const rawCatalogRadio = document.querySelector('input[value="raw"]');
     const tierSelectionContainer = document.getElementById('tier-selection-container');
     const tierSelect = document.getElementById('tier-select');
 
-    // --- CORRECTED Configuration ---
-    // Using the Tailscale IP for Node 1 (The Sentry)
+    // --- Configuration (Absolute URLs for the Mesh) ---
     const SENTRY_HOST = 'http://100.101.24.26:8080'; // Manifest Server
-    const LIBRARIAN_HOST = 'http://100.101.24.26:8081'; // Librarian for Secrets
 
-    // ... (The rest of the file remains the same) ...
-    const TIER_OPTIONS = {
-        "together": ["lite", "mid", "vision", "code", "judge"],
-        "huggingface": ["judge", "lite"],
-        "openrouter": ["lite", "mid", "uncensored", "judge"],
-        "mistral": ["lite", "mid", "full", "code", "vision"],
-        "default": ["lite", "vision", "full"]
-    };
+    // --- State ---
+    let providersData = []; // Will store the full provider metadata
     let currentMode = 'standard';
-    let currentProvider = '';
+
+    // --- Core Logic ---
 
     async function populateProviders() {
+        providerSelect.innerHTML = '<option value="">📡 Contacting Sentry...</option>';
         try {
-            const response = await fetch(`${SENTRY_HOST}/providers`);
-            if (!response.ok) throw new Error('Failed to fetch providers');
-            const providers = await response.json();
+            const response = await fetch(`${SENTRY_HOST}/api/v1/providers`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch providers`);
             
-            providerSelect.innerHTML = '<option value="">-- Select --</option>';
-            providers.forEach(provider => {
+            providersData = await response.json(); // Store the metadata
+            
+            providerSelect.innerHTML = '<option value="">-- Select Provider --</option>';
+            providersData.forEach(provider => {
                 const option = document.createElement('option');
-                option.value = provider;
-                option.textContent = provider;
+                option.value = provider.id;
+                option.textContent = provider.name;
                 providerSelect.appendChild(option);
             });
         } catch (error) {
-            providerSelect.innerHTML = `<option value="">Error loading providers</option>`;
-            console.error(error);
+            providerSelect.innerHTML = `<option value="">❌ Sentry Offline</option>`;
+            console.error("[Mesh Error] Failed to reach Manifest Server:", error);
         }
+    }
+
+    function handleProviderChange() {
+        const selectedProviderId = providerSelect.value;
+        if (!selectedProviderId) {
+            resetUI();
+            return;
+        }
+
+        const providerMeta = providersData.find(p => p.id === selectedProviderId);
+        if (!providerMeta) return;
+
+        // Requirement 2: Conditional UI Logic for Aggregators vs Makers
+        if (providerMeta.type === 'aggregator') {
+            standardTierRadio.disabled = true;
+            standardTierRadio.parentElement.classList.add('opacity-50', 'cursor-not-allowed');
+            rawCatalogRadio.checked = true; // Force Raw Catalog mode
+            currentMode = 'raw';
+        } else { // It's a 'maker'
+            standardTierRadio.disabled = false;
+            standardTierRadio.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+            // Keep currentMode as selected by user, default to 'standard' if needed
+            if (!document.querySelector('input[name="selection-mode"]:checked')) {
+                standardTierRadio.checked = true;
+                currentMode = 'standard';
+            }
+        }
+        
+        updateUI();
     }
 
     function updateUI() {
-        currentProvider = providerSelect.value;
+        const selectedProviderId = providerSelect.value;
+        currentMode = document.querySelector('input[name="selection-mode"]:checked').value;
+
         if (currentMode === 'standard') {
             tierSelectionContainer.style.display = 'block';
-            modelListDiv.innerHTML = '<p class="text-gray-500">Select a provider and tier.</p>';
-            populateTiers(currentProvider);
-        } else {
+            // In a real app, selecting a tier would trigger a fetch.
+            // For now, we just show the tiers and clear the model list.
+            modelListDiv.innerHTML = '<p class="text-gray-500">Select a tier to see standard models.</p>';
+        } else { // Raw mode
             tierSelectionContainer.style.display = 'none';
-            fetchModelsForProvider(currentProvider);
+            fetchModelsWithLiveDiscovery(selectedProviderId, 'raw');
         }
     }
-
-    function populateTiers(provider) {
-        const options = TIER_OPTIONS[provider] || TIER_OPTIONS['default'];
-        tierSelect.innerHTML = options.map(tier => `<option value="${tier}">${tier}</option>`).join('');
+    
+    function resetUI() {
+        standardTierRadio.disabled = false;
+        standardTierRadio.parentElement.classList.remove('opacity-50', 'cursor-not-allowed');
+        modelListDiv.innerHTML = '<p class="text-gray-500">Select a provider.</p>';
     }
 
-    async function fetchModelsForProvider(provider) {
-        if (!provider) {
-            modelListDiv.innerHTML = '<p class="text-gray-500">Select a provider to see available models.</p>';
-            return;
-        }
-        modelListDiv.innerHTML = '<p class="text-cyan-400 animate-pulse">Fetching models...</p>';
+    async function fetchModelsWithLiveDiscovery(providerId, mode) {
+        if (!providerId) return;
+        
+        modelListDiv.innerHTML = '<p class="text-cyan-400 animate-pulse">📡 Fetching live models from Tailscale node...</p>';
+        
         try {
-            const response = await fetch(`${SENTRY_HOST}/manifest/${provider}`);
-            if (!response.ok) throw new Error(`Failed to fetch models for ${provider}`);
-            const models = await response.json();
+            const url = `${SENTRY_HOST}/api/v1/models/${providerId}?mode=${mode}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}: Failed to fetch models`);
+            
+            const data = await response.json();
+            const models = data.models || [];
             
             if (models.length === 0) {
-                modelListDiv.innerHTML = `<p class="text-yellow-500">No models found for ${provider}.</p>`;
+                modelListDiv.innerHTML = `<p class="text-yellow-500">No models returned for ${providerId} in '${mode}' mode.</p>`;
                 return;
             }
 
@@ -80,76 +112,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="model-item p-3 border-b border-gray-700 hover:bg-gray-700 cursor-pointer" data-model-id="${model.model_id}">
                     <p class="font-bold text-purple-400">${model.name}</p>
                     <p class="text-xs text-gray-400">${model.model_id}</p>
-                    <p class="text-xs text-cyan-400">Type: ${model.type}</p>
-                    <div class="secret-status mt-2 text-xs"></div>
+                    <p class="text-xs text-cyan-400">Type: ${model.type || 'chat'}</p>
                 </div>
             `).join('');
 
-            document.querySelectorAll('.model-item').forEach(item => {
-                item.addEventListener('click', handleModelSelection);
-            });
-
         } catch (error) {
-            modelListDiv.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
-            console.error(error);
+            modelListDiv.innerHTML = `
+                <div class="p-4 bg-red-900/30 border border-red-500 rounded">
+                    <p class="text-red-400 font-bold">Mesh Link Failure</p>
+                    <p class="text-xs text-red-300">Unable to reach Sentry node. The Pi might be rebooting.</p>
+                    <p class="text-xs text-gray-500 mt-2">${error.message}</p>
+                </div>
+            `;
+            console.error("[Mesh Error] Live discovery fetch failed:", error);
         }
     }
 
-    function handleModelSelection(event) {
-        document.querySelectorAll('.model-item').forEach(item => {
-            item.classList.remove('bg-gray-700');
-            item.querySelector('.secret-status').innerHTML = '';
-        });
-
-        const selectedItem = event.currentTarget;
-        selectedItem.classList.add('bg-gray-700');
-        const modelId = selectedItem.dataset.modelId;
-        
-        const secretStatusDiv = selectedItem.querySelector('.secret-status');
-        secretStatusDiv.innerHTML = `
-            <button class="inject-key-btn mt-2 px-3 py-1 bg-yellow-600 text-white text-xs font-bold rounded hover:bg-yellow-500" data-model-id="${modelId}">
-                Fetch Secret for ${modelId}
-            </button>
-        `;
-
-        selectedItem.querySelector('.inject-key-btn').addEventListener('click', async (e) => {
-            e.stopPropagation();
-            const button = e.target;
-            button.textContent = 'Fetching...';
-            button.disabled = true;
-
-            const mockPrompt = `This is a test prompt for model ${modelId}. #glider`;
-            
-            try {
-                const response = await fetch(`${LIBRARIAN_HOST}/inject-identity`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: mockPrompt })
-                });
-
-                const result = await response.json();
-
-                if (result.key_injected) {
-                    button.parentElement.innerHTML = `<span class="text-green-400">✅ Secret '${result.secret_name}' Injected!</span>`;
-                } else {
-                     button.parentElement.innerHTML = `<span class="text-gray-500">No identity tag found in prompt.</span>`;
-                }
-
-            } catch (error) {
-                button.parentElement.innerHTML = `<span class="text-red-500">Error: Librarian offline or key not found.</span>`;
-                console.error("Librarian error:", error);
-            }
-        });
-    }
-
-    providerSelect.addEventListener('change', updateUI);
+    // --- Event Listeners ---
+    providerSelect.addEventListener('change', handleProviderChange);
     modeRadios.forEach(radio => {
-        radio.addEventListener('change', (event) => {
-            currentMode = event.target.value;
-            updateUI();
-        });
+        radio.addEventListener('change', updateUI);
     });
 
+    // --- Initial Load ---
     populateProviders();
-    updateUI();
 });
