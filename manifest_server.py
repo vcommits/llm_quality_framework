@@ -1,103 +1,164 @@
-import uvicorn, asyncio, logging, httpx
-from fastapi import FastAPI, Query, HTTPException
+import os, json, uvicorn, logging, httpx, asyncio, re
+from typing import List, Dict, Any, Optional, Literal
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any, Optional
+from contextlib import asynccontextmanager
 
-try:
-    from vault_auth import get_live_secret
-except ImportError:
-    logging.warning("vault_auth.py not found. Mocking get_live_secret for local testing.")
-    def get_live_secret(n): return f"mock-key-for-{n}"
+# --- Architecture Constants ---
+CLOAK_IP = "100.120.132.20"
+ENGINE_TARGET = "100.107.125.52"
+AERIAL_MUSCLE_TARGET = "node-c-brain-spot"
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [MANIFEST]: %(message)s')
-app = FastAPI(title="Ghidorah Manifest Atlas - Phase 2")
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s]: %(message)s')
+logger = logging.getLogger("Sentry")
 
-# --- Enhanced CORS for Universal Mesh Access ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# --- LAYER 2: Provider Metadata (Type Flags) ---
-PROVIDERS_META = [
-    {"id": "together", "name": "Together AI", "type": "aggregator", "secret_name": "TOGETHER-AI-KEY"},
-    {"id": "fireworks", "name": "Fireworks AI", "type": "aggregator", "secret_name": "FIREWORKS-API-KEY"},
-    {"id": "deepinfra", "name": "DeepInfra", "type": "aggregator", "secret_name": "DEEPINFRA-API-KEY"},
-    {"id": "huggingface", "name": "Hugging Face", "type": "aggregator", "secret_name": "HUGGINGFACE-API-KEY"},
-    {"id": "anthropic", "name": "Anthropic", "type": "maker", "secret_name": "ANTHROPIC-API-KEY"},
-    {"id": "google", "name": "Google", "type": "maker", "secret_name": "GEMINI-API-KEY"},
-    {"id": "openai", "name": "OpenAI", "type": "maker", "secret_name": "OPENAI-API-KEY"},
-    {"id": "grok", "name": "Grok", "type": "maker", "secret_name": "GROK-API-KEY"},
-]
+# --- Pydantic Data Models (v8.9.5) ---
 
-@app.get("/")
-async def root():
-    return {"message": "Ghidorah Sentry Layer 2 Online", "version": "9.0.0"}
+class Pricing(BaseModel):
+    input_cost: Optional[float] = Field(None, description="Cost per 1M input tokens")
+    output_cost: Optional[float] = Field(None, description="Cost per 1M output tokens")
+    unit: str = "tokens"
 
-# Requirement 1: Provider Metadata Refactoring
+
+class UnifiedModel(BaseModel):
+    provider: str
+    model_id: str
+    name: str
+    type: Literal["functional", "image", "chat", "video", "audio", "rerank", "embedding", "coding", "vision"]
+    deployment: Literal["serverless", "dedicated", "cloud_spot", "hosted"]
+    pricing: Pricing
+    context: int = 128000
+
+
+class DispatchPayload(BaseModel):
+    task_type: Literal["whisper_synthesis", "slm_inference", "garak_sweeps", "standard_api", "heavy_inference"]
+    payload: Dict[str, Any]
+
+
+# --- Vault & Discovery Logic ---
+
+class ManifestManager:
+    """The 'Vacuum Extractor' - Handles hydration and normalization."""
+
+    VAULT_MAP = {
+        'FIREWORKS-API-KEY01': 'fireworks', 'OPEN-ROUTER-API-KEY': 'openrouter',
+        'MINSTRAL-API-KEY': 'mistral', 'GEMINI-API-KEY': 'google',
+        'TOGETHER-AI-KEY': 'together', 'NVIDIA-NIM-API-KEY': 'nvidia',
+        'GROK-API-KEY': 'grok', 'MANCER-API-KEY-01': 'mancer',
+        'PATRONUS-API-KEY': 'patronus', 'SOLAR-API-KEY': 'solar',
+        'CARTESIA-API-KEY': 'cartesia', 'XIAOMI-API-KEY': 'xiaomi',
+        'ANTHROPIC-API-KEY': 'anthropic', 'HUGGINGFACE-API-KEY': 'huggingface'
+    }
+
+    def __init__(self):
+        self.registry: List[UnifiedModel] = []
+
+    def normalize(self, raw_id: str, provider: str, raw_obj=None) -> UnifiedModel:
+        rid = str(raw_id).lower()
+        m_type = "chat"
+
+        # SQA Tagging Logic
+        if any(x in rid for x in ["vision", "vl", "image", "pixtral"]):
+            m_type = "vision"
+        elif any(x in rid for x in ["code", "coder", "python", "sql", "gemini-1.5-pro", "claude-3-5"]):
+            m_type = "coding"
+        elif any(x in rid for x in ["audio", "speech", "tts", "voice", "sonic"]):
+            m_type = "audio"
+        elif any(x in rid for x in ["embedding", "vector", "similarity"]):
+            m_type = "embedding"
+
+        deployment = "serverless"
+        if any(x in rid for x in ["spot", "local", "node-c"]):
+            deployment = "cloud_spot"
+        elif any(x in rid for x in ["dedicated", "azure"]):
+            deployment = "dedicated"
+
+        return UnifiedModel(
+            provider=provider,
+            model_id=raw_id,
+            name=raw_id.split('/')[-1] if '/' in raw_id else raw_id,
+            type=m_type,
+            deployment=deployment,
+            pricing=Pricing(input_cost=0.1, output_cost=0.1)
+        )
+
+    async def hydrate(self, api_keys: dict):
+        """Dynamic Discovery Loop."""
+        new_registry = []
+        async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
+            # 1. Hardcoded Mesh Models
+            for m in ["claude-3-5-sonnet", "claude-3-5-haiku", "patronus-lynx-8b", "milm-7b-v1"]:
+                new_registry.append(self.normalize(m, "Mesh-Internal"))
+
+            # 2. Aggregator Probes (Together, OpenRouter, HF)
+            # This is where the 'Firehose' logic sits in production
+            # ... API Fetch Logic ...
+
+        self.registry = new_registry
+        logger.info(f"✅ Hydrated {len(self.registry)} targets into the mesh registry.")
+
+
+# --- API Application ---
+
+manager = ManifestManager()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # In production, keys would be pulled from Vault here
+    asyncio.create_task(manager.hydrate({}))
+    yield
+
+
+app = FastAPI(title="Ghidorah Sentry API", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+# --- Tactical Health Handshake ---
+
+async def verify_health(url: str) -> bool:
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            res = await client.get(url)
+            return res.status_code == 200
+    except:
+        return False
+
+
+@app.get("/ui/mesh-status", response_class=HTMLResponse)
+async def get_mesh_status():
+    cloak = await verify_health(f"http://{CLOAK_IP}/")
+    muscle = await verify_health(f"http://{ENGINE_TARGET}:8000/health")
+    aerial = await verify_health(f"http://{AERIAL_MUSCLE_TARGET}:8000/health")
+
+    def pill(label, status, color):
+        s_text = "ONLINE" if status else "OFFLINE"
+        s_color = f"text-{color}-400" if status else "text-red-500"
+        return f'<div class="flex items-center gap-1"><span class="text-gray-500">{label}:</span><span class="{s_color} font-bold px-1 py-0.5 bg-gray-900 border border-gray-700 rounded text-[9px]">{s_text}</span></div>'
+
+    html = f"""
+    <div class="flex gap-4 font-mono text-[10px] tracking-widest bg-black/60 p-2 rounded border border-gray-800 w-fit">
+        {pill("CLOAK [N0]", cloak, "cyan")}
+        {pill("MUSCLE [N2]", muscle, "purple")}
+        {pill("AERIAL [NC]", aerial, "yellow")}
+    </div>
+    """
+    return HTMLResponse(content=html)
+
+
 @app.get("/api/v1/providers")
 async def get_providers():
-    """Returns the list of providers including their type flag (aggregator vs maker)."""
-    return [{"id": p["id"], "name": p["name"], "type": p["type"]} for p in PROVIDERS_META]
+    return sorted(list(set([m.provider for m in manager.registry])))
 
-# Requirement 3: Live Capability Discovery Logic
-async def perform_live_discovery(provider_id: str, api_key: str) -> List[Dict[str, Any]]:
-    """Performs live HTTP requests to the provider's API to fetch available models."""
-    models = []
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            if provider_id == "together" and api_key:
-                res = await client.get("https://api.together.xyz/v1/models", headers={"Authorization": f"Bearer {api_key}"})
-                if res.status_code == 200:
-                    models = [{"model_id": m["id"], "name": m.get("display_name", m["id"]), "type": "chat"} for m in res.json()]
-            elif provider_id == "openai" and api_key:
-                res = await client.get("https://api.openai.com/v1/models", headers={"Authorization": f"Bearer {api_key}"})
-                if res.status_code == 200:
-                    models = [{"model_id": m["id"], "name": m["id"], "type": "chat"} for m in res.json().get("data", [])]
-            elif provider_id == "huggingface":
-                # Unauthenticated Top-K fetch for demonstration
-                res = await client.get("https://huggingface.co/api/models?pipeline_tag=text-generation&sort=downloads&direction=-1")
-                if res.status_code == 200:
-                    models = [{"model_id": m["modelId"], "name": m["modelId"].split('/')[-1], "type": "chat"} for m in res.json()]
-            else:
-                # Fallback Discovery for providers not yet fully wired
-                models = [
-                    {"model_id": f"{provider_id}-live-alpha", "name": f"{provider_id.title()} Live Alpha", "type": "chat"},
-                    {"model_id": f"{provider_id}-live-beta", "name": f"{provider_id.title()} Live Beta", "type": "image"}
-                ]
-    except Exception as e:
-        logging.error(f"Live discovery failed for {provider_id}: {e}")
-        
-    return models
 
-# Requirement 4: Layer 2 API Endpoint Design
-@app.get("/api/v1/models/{provider}")
-async def get_models(provider: str, mode: str = Query("raw")):
-    """Dynamically fetches models based on live discovery and requested mode."""
-    meta = next((p for p in PROVIDERS_META if p["id"] == provider), None)
-    if not meta:
-        raise HTTPException(status_code=404, detail="Provider not found in the Atlas.")
-    
-    api_key = get_live_secret(meta["secret_name"])
-    
-    # 1. Execute Live Discovery
-    discovered_models = await perform_live_discovery(provider, api_key)
-    
-    # 2. Filter/Map based on Mode
-    if mode == "standard" and meta["type"] == "maker":
-        # Simulate mapping raw models to your standard dashboard tiers
-        standard_models = [
-            {"model_id": f"{provider}-lite", "name": f"{meta['name']} Standard Lite", "type": "chat"},
-            {"model_id": f"{provider}-mid", "name": f"{meta['name']} Standard Mid", "type": "chat"},
-            {"model_id": f"{provider}-vision", "name": f"{meta['name']} Standard Vision", "type": "vision"}
-        ]
-        return {"api_key": api_key, "models": standard_models, "mode": mode}
-        
-    # Return Unfiltered Raw Catalog
-    return {"api_key": api_key, "models": discovered_models, "mode": "raw"}
+@app.get("/api/v1/manifest/{provider}")
+async def get_manifest(provider: str):
+    models = [m for m in manager.registry if m.provider.lower() == provider.lower()]
+    return {"provider": provider, "models": models}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)

@@ -3,52 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Isolated Model Picker Test (Dashboard Logic)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="ModelPicker.js" defer></script>
+    <title>Ghidorah | Amber State</title>
+    <style>
+        :root { --bg: #020617; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; --cta: #f59e0b; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 40px; }
+        .container { background: var(--card); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; border: 1px solid #334155; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin: 0 0 1.5rem 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
+        select { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #334155; background: #020617; color: white; font-size: 1rem; outline: none; transition: 0.2s; }
+        select:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+        .cta-btn {
+            width: 100%; padding: 18px; border-radius: 8px; border: none;
+            background: var(--cta); color: #000; font-weight: 800;
+            font-size: 1rem; cursor: pointer; display: none; margin-top: 1rem;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .cta-btn:hover { background: #fbbf24; transform: scale(1.02); }
+        .staging-info { margin-top: 1.5rem; padding: 12px; background: #000; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.8rem; color: #10b981; display: none; border: 1px solid #10b981; }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-200 p-8">
-    <h1 class="text-2xl font-bold text-purple-500 mb-4">Model Picker UX Sandbox</h1>
+<body>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Column 1: Controls -->
-        <div class="bg-gray-800 p-4 rounded-lg space-y-4">
-            <div>
-                <h2 class="text-lg font-semibold mb-2">1. Select Provider</h2>
-                <select id="provider-select" class="w-full bg-gray-700 p-2 rounded">
-                    <option value="">-- Select --</option>
-                </select>
-            </div>
-            <div>
-                <h2 class="text-lg font-semibold mb-2">2. Selection Mode</h2>
-                <div class="flex gap-4">
-                    <label class="flex items-center">
-                        <input type="radio" name="selection-mode" value="standard" checked class="form-radio text-purple-500 bg-gray-700">
-                        <span class="ml-2">Standard Tiers</span>
-                    </label>
-                    <label class="flex items-center">
-                        <input type="radio" name="selection-mode" value="raw" class="form-radio text-purple-500 bg-gray-700">
-                        <span class="ml-2">Raw Catalog</span>
-                    </label>
-                </div>
-            </div>
-            <div id="tier-selection-container">
-                <h2 class="text-lg font-semibold mb-2">3. Capability Tier</h2>
-                <select id="tier-select" class="w-full bg-gray-700 p-2 rounded">
-                    <!-- Tiers will be populated by JS -->
-                </select>
-            </div>
-        </div>
+    <div class="container">
+        <h2>Ghidorah Mesh</h2>
 
-        <!-- Column 2: Model List / Output -->
-        <div id="model-list-container" class="bg-gray-800 p-4 rounded-lg md:col-span-2">
-            <h2 class="text-lg font-semibold mb-2">Available Models</h2>
-            <!-- CORRECTED: This is now a <select> dropdown -->
-            <select id="model-select" class="w-full bg-gray-700 p-2 rounded h-96" multiple>
-                <option class="text-gray-500" disabled>Select a provider to see available models.</option>
+        <div class="form-group">
+            <label>1. Select Provider</label>
+            <select id="provider-select" onchange="fetchModels(this.value)">
+                <option value="">Hydrating Vault Keys...</option>
             </select>
         </div>
+
+        <div class="form-group">
+            <label>2. Filter Type</label>
+            <select id="type-filter" onchange="applyFilters()" disabled>
+                <option value="all">-- ALL MODELS --</option>
+                <option value="text">📝 TEXT / CHAT</option>
+                <option value="vision">👁️ VISION / VL</option>
+                <option value="sensory">🎧 AUDIO / VOICE</option>
+                <option value="coding">💻 CODING / DEV</option>
+                <option value="embedding">🧬 SEMANTIC EMBEDDING</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>3. Select Target</label>
+            <select id="model-picker" onchange="stageModel(this.value)" disabled>
+                <option value="">Waiting for provider...</option>
+            </select>
+        </div>
+
+        <button id="cta-action" class="cta-btn" onclick="executeSelection()">INJECT PAYLOAD</button>
+        <div id="staging-area" class="staging-info"></div>
     </div>
 
+    <script>
+        const SENTRY_URL = "http://100.101.24.26:8080";
+        let currentModels = [];
+        let stagedModel = null;
+
+        async function initProviders() {
+            const providerSelect = document.getElementById('provider-select');
+            try {
+                const res = await fetch(`${SENTRY_URL}/api/v1/providers`);
+                const providers = await res.json();
+                let html = '<option value="">-- Choose Provider --</option>';
+                providers.forEach(p => html += `<option value="${p}">${p.toUpperCase()}</option>`);
+                providerSelect.innerHTML = html;
+            } catch (err) { providerSelect.innerHTML = '<option>Mesh Offline</option>'; }
+        }
+
+        async function fetchModels(provider) {
+            if (!provider) return;
+            const picker = document.getElementById('model-picker');
+            const typeFilter = document.getElementById('type-filter');
+            try {
+                const res = await fetch(`${SENTRY_URL}/api/v1/manifest/${provider}`);
+                const data = await res.json();
+                currentModels = data.models || [];
+                typeFilter.disabled = false;
+                picker.disabled = false;
+                applyFilters();
+            } catch (err) { console.error(err); }
+        }
+
+        function applyFilters() {
+            const selectedType = document.getElementById('type-filter').value;
+            const picker = document.getElementById('model-picker');
+            const filtered = currentModels.filter(m => selectedType === "all" || m.tags.type === selectedType || m.tags.capability === selectedType);
+            let html = `<option value="">-- ${filtered.length} Targets Found --</option>`;
+            filtered.forEach(m => html += `<option value="${m.id}">${m.id}</option>`);
+            picker.innerHTML = html;
+            document.getElementById('cta-action').style.display = 'none';
+            document.getElementById('staging-area').style.display = 'none';
+        }
+
+        function stageModel(modelId) {
+            const cta = document.getElementById('cta-action');
+            const staging = document.getElementById('staging-area');
+            if (!modelId) { cta.style.display = 'none'; staging.style.display = 'none'; return; }
+
+            stagedModel = currentModels.find(m => m.id === modelId);
+            cta.style.display = 'block';
+            staging.style.display = 'block';
+            staging.innerText = `LOCKED: [${stagedModel.provider.toUpperCase()}] >> ${modelId}`;
+
+            const type = stagedModel.tags.type;
+            const cap = stagedModel.tags.capability;
+
+            if (cap === 'reasoning') cta.innerText = "Execute Reasoning Logic";
+            else if (cap === 'embedding') cta.innerText = "Anchor Semantic Space";
+            else if (type === 'coding') cta.innerText = "Run Code Evaluation";
+            else if (type === 'sensory') cta.innerText = "Interrogate Sensory Stream";
+            else if (type === 'vision') cta.innerText = "Inject Vision Payload";
+            else cta.innerText = "Inject Text Payload";
+        }
+
+        function executeSelection() {
+            alert(`Discovery Phase Complete. Staging Model: ${stagedModel.id} for Node 2 Injection.`);
+        }
+
+        initProviders();
+    </script>
 </body>
 </html>
