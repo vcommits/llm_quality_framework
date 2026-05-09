@@ -66,7 +66,7 @@ class GhidorahPicker {
             data.forEach(p => html += `<option value="${p}">${p.toUpperCase()}</option>`);
             this.el.provider.innerHTML = html;
         } catch (err) {
-            this.el.status.innerText = "🔴 MESH OFFLINE (Local Cache Only)";
+            this.el.status.innerText = "🔴 MESH OFFLINE (Check Pi 8080)";
             this.el.status.style.color = '#ef4444';
             this.el.status.style.display = 'block';
             this.el.provider.innerHTML = '<option value="">-- OFFLINE --</option>';
@@ -86,23 +86,20 @@ class GhidorahPicker {
             this.el.status.innerText = `📡 Handshaking with ${provider.toUpperCase()}...`;
             this.el.status.style.color = '#38bdf8';
             
-            // 1. Initial hit to check if it's an aggregator
             const res = await fetch(`${this.apiEndpoint}/api/v1/manifest/${provider}?mode=standard`);
             const data = await res.json();
             this.selectedProviderType = data.type || "maker";
             
-            // 2. Requirement 2: Aggregator Logic - Force Raw Mode and Live Discovery
+            // Requirement: Aggregators trigger Raw mode for Live Discovery
             if (this.selectedProviderType === 'aggregator') {
-                this.el.status.innerText = "🔥 Aggregator detected! Unlocking live Firehose...";
-                this.el.status.style.color = '#f59e0b'; // Amber
+                this.el.status.innerText = "🔥 Aggregator! Fetching live Firehose...";
+                this.el.status.style.color = '#f59e0b';
                 
                 const rawRes = await fetch(`${this.apiEndpoint}/api/v1/manifest/${provider}?mode=raw`);
                 const rawData = await rawRes.json();
-                
-                // Prioritize live pulled models, fallback to static if fetch fails
                 this.models = (rawData.models && rawData.models.length > 0) ? rawData.models : data.models;
             } else {
-                this.el.status.innerText = "🟢 Direct Maker detected.";
+                this.el.status.innerText = "🟢 Direct Maker ready.";
                 this.el.status.style.color = '#10b981';
                 this.models = data.models || [];
             }
@@ -112,8 +109,7 @@ class GhidorahPicker {
             this.applyFilter();
 
         } catch (err) {
-            console.error(err);
-            this.el.status.innerText = "🔴 MANIFEST ERROR";
+            this.el.status.innerText = "🔴 MANIFEST FETCH FAILED";
             this.el.status.style.color = '#ef4444';
         }
     }
@@ -121,16 +117,15 @@ class GhidorahPicker {
     applyFilter() {
         const type = this.el.filter.value;
         const filtered = this.models.filter(m => type === "all" || m.type === type);
-        let html = `<option value="">-- ${filtered.length} TARGETS AVAILABLE --</option>`;
+        let html = `<option value="">-- ${filtered.length} TARGETS --</option>`;
         filtered.forEach(m => html += `<option value="${m.model_id}">${m.model_id}</option>`);
         this.el.model.innerHTML = html;
-        this.el.cta.style.display = 'none';
     }
 
     stageModel(modelId) {
         if (!modelId) return;
         const model = this.models.find(m => m.model_id === modelId);
         this.el.cta.style.display = 'block';
-        this.el.cta.innerText = `INJECT ${model.type} PAYLOAD`;
+        this.el.cta.innerText = `INJECT ${model.type.toUpperCase()} PAYLOAD`;
     }
 }
