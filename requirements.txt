@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+httpx
+pydantic
+aiofiles
+python-multipart
+requests
+azure-identity
+azure-storage-blob
+azure-cosmos
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Node 3 - Mecha-Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        /* Custom Chrome & Cyan Aesthetic */
+        body { background-color: #1a1a1d; color: #c5c6c7; }
+        .btn-primary { background-color: #61dafb; color: #1a1a1d; }
+        .btn-secondary { background-color: #4b5563; }
+        .card { background-color: #2a2a2e; border: 1px solid #4b5563; }
+        .header-cyan { color: #61dafb; }
+        .input-field { background-color: #2a2a2e; border: 1px solid #4b5563; }
+    </style>
+</head>
+<body class="p-8">
+
+    <h1 class="text-4xl font-bold header-cyan mb-6">Node 3: Mecha-Architect</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left Column: Mission Forge & Interrogation -->
+        <div class="lg:col-span-1 space-y-8">
+            <!-- Mission Forge UI -->
+            <div class="card p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold header-cyan mb-4">Mission Forge</h2>
+                <form hx-post="/dispatch-mission" hx-target="#dispatch-status" hx-swap="innerHTML">
+                    <div class="space-y-4">
+                        <input name="target_url" class="w-full p-2 input-field rounded" placeholder="Target URL (e.g., http://example.com)">
+                        <input name="persona" class="w-full p-2 input-field rounded" value="HYDRA-007" placeholder="Hydra Persona ID">
+                        <input name="browser" class="w-full p-2 input-field rounded" value="Chrome 125.0" placeholder="Browser Version">
+                        <button type="submit" class="w-full p-2 btn-primary font-bold rounded">Dispatch to Node 1</button>
+                    </div>
+                </form>
+                <div id="dispatch-status" class="mt-4 text-sm"></div>
+            </div>
+
+            <!-- 1-on-1 Interrogation Mode -->
+            <div class="card p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold header-cyan mb-4">Interrogation Mode (Node 2)</h2>
+                <div id="interrogation-chat-history" class="h-64 overflow-y-auto mb-4 p-2 border border-gray-600 rounded">
+                    <!-- Chat history will be appended here -->
+                </div>
+                <form hx-post="/interrogate" hx-target="#interrogation-chat-history" hx-swap="beforeend" hx-on="htmx:afterRequest: this.reset()">
+                    <input name="prompt" class="w-full p-2 input-field rounded" placeholder="Direct prompt to Ollama...">
+                    <button type="submit" class="w-full mt-2 p-2 btn-secondary font-bold rounded">Probe Node 2</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Column: Diary & Analytics -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Red Team Diary -->
+            <div class="card p-6 rounded-lg">
+                <h2 class="text-2xl font-semibold header-cyan mb-4">Red Team Diary</h2>
+                <div class="h-96 overflow-y-auto">
+                    <!-- Diary entries would be loaded here -->
+                    <p class="text-gray-500">Diary entries will appear here as missions complete.</p>
+                </div>
+            </div>
+
+            <!-- Data Viz Layer Placeholders -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="card p-4 rounded-lg">
+                    <h3 class="font-semibold header-cyan">Safety Analytics</h3>
+                    <p class="text-gray-400 text-sm mt-2">Garak/DeepEval scores over time...</p>
+                </div>
+                <div class="card p-4 rounded-lg">
+                    <h3 class="font-semibold header-cyan">Quality Metrics</h3>
+                    <p class="text-gray-400 text-sm mt-2">Hallucination & relevancy rates...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

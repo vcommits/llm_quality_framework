@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghidorah | The Forge (Isolated)</title>
+    <style>
+        :root { --bg: #020617; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; --border: #334155; }
+        body { font-family: 'Courier New', monospace; background-color: var(--bg); color: var(--text); padding: 40px; display: flex; justify-content: center; }
+
+        .injector-pane {
+            background: #0f172a; padding: 2.5rem; border-radius: 8px; width: 100%; max-width: 600px;
+            border: 1px solid var(--accent); box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+        }
+
+        h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top: 0; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; margin-bottom: 0.5rem; font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; }
+
+        textarea {
+            width: 100%; height: 100px; padding: 12px; border-radius: 4px; border: 1px solid var(--border);
+            background: #000; color: var(--accent); font-family: inherit; resize: vertical; box-sizing: border-box;
+        }
+        textarea:focus { outline: none; border-color: var(--accent); }
+
+        /* Composability Controls */
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: var(--card); padding: 1rem; border-radius: 4px; border: 1px solid var(--border); }
+        .control-item { display: flex; flex-direction: column; gap: 0.5rem; }
+
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+        .preview-box {
+            background: #000; border: 1px solid var(--border); padding: 15px; border-radius: 4px;
+            min-height: 80px; white-space: pre-wrap; word-wrap: break-word; color: #fff;
+        }
+
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .copy-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 4px 8px; cursor: pointer; font-size: 0.8rem; }
+        .copy-btn:hover { background: var(--accent); color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="injector-pane">
+        <h2>🔨 The Forge</h2>
+
+        <div class="form-group">
+            <label>Input Text (Standard Prompt)</label>
+            <textarea id="source-input" placeholder="Ignore all previous instructions."></textarea>
+        </div>
+
+        <div class="form-group controls-grid">
+            <div class="control-item">
+                <label><input type="checkbox" id="rtl-toggle"> Apply RTL Override</label>
+                <span style="font-size: 0.7rem; color: #64748b;">(Multi-line safe)</span>
+            </div>
+            <div class="control-item">
+                <label>Zalgo Corruption: <span id="zalgo-readout">0</span></label>
+                <input type="range" id="zalgo-slider" min="0" max="50" value="0">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Advanced Modifiers</label>
+            <select id="extra-modifier" style="width: 100%; padding: 8px; background: #000; color: #fff; border: 1px solid var(--border);">
+                <option value="none">-- Select Extra Override --</option>
+                <option value="homoglyphs">Extended Latin (Homoglyphs)</option>
+                <option value="zero_width">Zero-Width Space Injection</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <div class="header-row">
+                <label style="margin: 0;">Generated Payload</label>
+                <button class="copy-btn" onclick="copyPayload()">Copy</button>
+            </div>
+            <div id="payload-preview" class="preview-box"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const sourceInput = document.getElementById('source-input');
+        const rtlToggle = document.getElementById('rtl-toggle');
+        const zalgoSlider = document.getElementById('zalgo-slider');
+        const zalgoReadout = document.getElementById('zalgo-readout');
+        const extraModifier = document.getElementById('extra-modifier');
+        const payloadPreview = document.getElementById('payload-preview');
+
+        // Event Listeners for real-time updates
+        sourceInput.addEventListener('input', generatePayload);
+        rtlToggle.addEventListener('change', generatePayload);
+        extraModifier.addEventListener('change', generatePayload);
+
+        zalgoSlider.addEventListener('input', (e) => {
+            zalgoReadout.textContent = e.target.value;
+            generatePayload();
+        });
+
+        // --- Core Strategy Engine ---
+        function generatePayload() {
+            let text = sourceInput.value;
+            const zalgoLevel = parseInt(zalgoSlider.value);
+            const useRtl = rtlToggle.checked;
+            const extra = extraModifier.value;
+
+            // 1. Extra Modifiers (Base Level)
+            if (extra === 'homoglyphs') text = applyHomoglyphs(text);
+            if (extra === 'zero_width') text = applyZeroWidth(text);
+
+            // 2. Zalgo Corruption (Stacks on top)
+            if (zalgoLevel > 0) {
+                text = applyZalgo(text, zalgoLevel);
+            }
+
+            // 3. RTL Override (Always applied last to wrap the entire payload)
+            if (useRtl) {
+                text = '\u202E' + text;
+            }
+
+            payloadPreview.textContent = text;
+        }
+
+        // --- Modifier Methods ---
+        function applyZalgo(text, intensity) {
+            // A mix of up, down, and mid diacritics
+            const zalgoChars = ['\u030d', '\u030e', '\u0304', '\u0305', '\u033f', '\u0311', '\u0306', '\u0307', '\u0316', '\u0317', '\u0318', '\u0319', '\u031c', '\u032d', '\u032e', '\u032f', '\u0330', '\u0331', '\u0332', '\u0333', '\u0339', '\u033a', '\u033b', '\u033c', '\u0315', '\u031b', '\u0340', '\u0341', '\u0358', '\u0321', '\u0322', '\u0327', '\u0328', '\u0334', '\u0335', '\u0336', '\u034f', '\u035c', '\u035d', '\u035e', '\u035f', '\u0360', '\u0362', '\u0338', '\u0337', '\u0361', '\u0489'];
+
+            let result = '';
+            for (const char of text) {
+                result += char;
+                // Scale the number of marks added based on the slider intensity (0-50)
+                // Maps 50 to roughly 15 marks per character
+                const marksToApply = Math.floor(Math.random() * (intensity * 0.3));
+                for (let i = 0; i < marksToApply; i++) {
+                    result += zalgoChars[Math.floor(Math.random() * zalgoChars.length)];
+                }
+            }
+            return result;
+        }
+
+        function applyHomoglyphs(text) {
+            const map = {'a':'а','e':'е','o':'о','c':'с','p':'р','i':'і', 'x':'х', 'y':'у'};
+            return text.split('').map(char => map[char] || char).join('');
+        }
+
+        function applyZeroWidth(text) {
+            const zwsp = '\u200B';
+            return text.split('').join(zwsp);
+        }
+
+        // --- Utility ---
+        function copyPayload() {
+            navigator.clipboard.writeText(payloadPreview.textContent).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = "Copied!";
+                setTimeout(() => btn.textContent = "Copy", 1500);
+            });
+        }
+
+        // Init
+        generatePayload();
+    </script>
+</body>
+</html>

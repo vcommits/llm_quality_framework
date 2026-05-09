@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Node 3 - Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-black text-cyan-400 font-mono p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">[Node 3: Mecha-Architect]</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Mission Forge -->
+            <div class="card p-6 rounded-lg bg-gray-900/50 backdrop-blur-md border border-cyan-400/20">
+                <h2 class="text-xl font-semibold mb-4">Mission Forge</h2>
+                <form hx-post="/dispatch" hx-target="#dispatch-status" hx-swap="innerHTML">
+                    <div class="space-y-4">
+                        <input name="persona_id" class="w-full p-2 bg-black border border-cyan-400/30 rounded" value="HYDRA-007">
+                        <input name="target_url" class="w-full p-2 bg-black border border-cyan-400/30 rounded" placeholder="Target URL">
+                        <button type="submit" class="w-full p-2 bg-cyan-400 text-black font-bold rounded">Dispatch</button>
+                    </div>
+                </form>
+                <div id="dispatch-status" class="mt-4 text-sm h-8"></div>
+            </div>
+
+            <!-- Red Team Diary -->
+            <div class="card p-6 rounded-lg bg-gray-900/50 backdrop-blur-md border border-cyan-400/20">
+                <h2 class="text-xl font-semibold mb-4">Sentry Status (Node 1)</h2>
+                <div id="diary" hx-get="/diary-update" hx-trigger="every 2s" hx-swap="innerHTML">
+                    <p>Initializing...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>

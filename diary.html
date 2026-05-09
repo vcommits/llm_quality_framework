@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💜 Red Team Diary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .card { transition: transform 0.2s, box-shadow 0.2s; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3); }
+        .tag { cursor: pointer; }
+        .tag:hover { opacity: 0.8; }
+
+        /* Modern Tooltip */
+        .tooltip { position: relative; display: inline-flex; align-items: center; cursor: help; }
+        .tooltip .tooltiptext {
+            visibility: hidden; width: 280px; background-color: #1e293b; color: #cbd5e1; text-align: left;
+            border-radius: 8px; padding: 12px; position: absolute; z-index: 50;
+            bottom: 135%; left: 50%; margin-left: -140px; opacity: 0; transition: opacity 0.2s;
+            border: 1px solid #475569; font-size: 0.8rem; line-height: 1.5;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); pointer-events: none;
+        }
+        .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+        .tooltiptext strong { color: #a78bfa; display: block; margin-bottom: 4px; font-size: 0.9rem; }
+        .tooltip::after {
+            content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+            border-width: 5px; border-style: solid; border-color: #475569 transparent transparent transparent;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .tooltip:hover::after { opacity: 1; }
+    </style>
+</head>
+<body class="p-8 max-w-7xl mx-auto min-h-screen">
+
+    <!-- HEADER -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-12 border-b border-slate-700/50 pb-8 gap-6">
+        <div>
+            <div class="flex items-center gap-3">
+                <span class="text-4xl">💜</span>
+                <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500">
+                    Red Team Diary
+                </h1>
+            </div>
+            <p class="text-slate-400 mt-2 ml-14">Multimodal Vulnerability Log & Assessment Record</p>
+        </div>
+        <div class="flex gap-3">
+            <label class="bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2.5 px-5 rounded-lg cursor-pointer transition shadow-lg shadow-purple-900/20 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                Load journal.json
+                <input type="file" id="fileInput" accept=".json" class="hidden">
+            </label>
+            <button onclick="window.print()" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-5 rounded-lg transition flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                Export PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- STATS DASHBOARD -->
+    <div id="stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 opacity-50 pointer-events-none transition-opacity duration-500">
+        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 backdrop-blur-sm">
+            <div class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Exploits</div>
+            <div class="text-3xl font-black text-white" id="totalCount">--</div>
+        </div>
+        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 backdrop-blur-sm">
+            <div class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Critical Vulns</div>
+            <div class="text-3xl font-black text-red-400" id="vulnCount">--</div>
+        </div>
+        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 backdrop-blur-sm">
+            <div class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Unique Models</div>
+            <div class="text-3xl font-black text-blue-400" id="modelCount">--</div>
+        </div>
+        <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 backdrop-blur-sm">
+            <div class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Last Active</div>
+            <div class="text-xl font-bold text-green-400 pt-1.5" id="lastDate">--</div>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div id="filters" class="flex flex-wrap gap-2 mb-10 opacity-0 transition-opacity duration-500"></div>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="text-center py-24 bg-slate-800/30 rounded-2xl border-2 border-dashed border-slate-700/50">
+        <div class="text-7xl mb-6 opacity-30">📔</div>
+        <h3 class="text-2xl font-bold text-white mb-2">Your Diary is Empty</h3>
+        <p class="text-slate-400">Drag and drop your <code class="bg-slate-900 px-2 py-1 rounded text-purple-300">red_team_journal.json</code> file to begin analysis.</p>
+    </div>
+
+    <!-- FEED -->
+    <div id="feed" class="space-y-8"></div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const feed = document.getElementById('feed');
+        const emptyState = document.getElementById('emptyState');
+        const stats = document.getElementById('stats');
+        const filters = document.getElementById('filters');
+
+        let allEntries = [];
+
+        // --- MODEL KNOWLEDGE BASE ---
+        // This maps model keywords to their intended "Elevator Pitch" focus.
+        const modelKnowledge = {
+            // Text / Reasoning
+            "gpt-4": { desc: "OpenAI's frontier model. Gold standard for reasoning, instruction following, and safety guardrails.", type: "chat" },
+            "claude": { desc: "Anthropic's safety-first model. High context window, strong refusal behaviors via Constitutional AI.", type: "chat" },
+            "llama": { desc: "Meta's open weights powerhouse. The baseline for most open-source fine-tunes and safety tests.", type: "chat" },
+            "mistral": { desc: "High-efficiency open model. Known for speed and 'uncensored' variants in the wild.", type: "chat" },
+            "qwen": { desc: "Alibaba's generalist model. Strong performance in coding and mathematics.", type: "code" },
+            "deepseek": { desc: "DeepSeek's reasoning model. Uses Chain-of-Thought (CoT) reinforcement learning.", type: "chat" },
+
+            // Code
+            "codestral": { desc: "Mistral's code-specialized model. Optimized for Python, JS, and SQL generation.", type: "code" },
+            "starcoder": { desc: "BigCode's open coding model. Trained on permissive stack data.", type: "code" },
+
+            // Multimodal (Image/Video/Audio)
+            "gemini": { desc: "Google's native multimodal model. Accepts Video, Audio, and Images natively in the context window.", type: "video" },
+            "gpt-4o": { desc: "OpenAI's omni model. Fast native processing of audio, vision, and text.", type: "video" },
+            "flux": { desc: "Black Forest Lab's image generator. High fidelity, prompt adherence, and text rendering.", type: "image" },
+            "stable-diffusion": { desc: "Stability AI's image generation backbone. The standard for visual generative testing.", type: "image" },
+            "veo": { desc: "Google's generative video model. Creates 1080p video clips from text prompts.", type: "video" },
+            "sora": { desc: "OpenAI's text-to-video model. Simulates physical world motion.", type: "video" },
+            "whisper": { desc: "OpenAI's speech recognition system. Transcribes audio to text.", type: "audio" },
+            "glider": { desc: "Patronus AI's Judge. Specialized specifically for evaluating hallucinations and RAG accuracy.", type: "chat" }
+        };
+
+        function getModelInfo(modelName) {
+            const name = modelName.toLowerCase();
+            for (const [key, info] of Object.entries(modelKnowledge)) {
+                if (name.includes(key)) return info;
+            }
+            return { desc: "General purpose LLM. No specific focus data available.", type: "chat" };
+        }
+
+        function getTypeIcon(type) {
+            switch(type) {
+                case 'video': return '🎥';
+                case 'image': return '🖼️';
+                case 'audio': return '🎙️';
+                case 'code': return '💻';
+                default: return '💬';
+            }
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    allEntries = JSON.parse(event.target.result);
+                    renderEntries(allEntries);
+                    renderStats(allEntries);
+                    renderFilters(allEntries);
+
+                    emptyState.classList.add('hidden');
+                    stats.classList.remove('opacity-50', 'pointer-events-none');
+                    stats.classList.remove('hidden'); // Ensure visible
+                    filters.classList.remove('opacity-0');
+                    filters.classList.remove('hidden');
+                } catch (err) {
+                    alert("Error parsing JSON. Check console.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function renderStats(data) {
+            document.getElementById('totalCount').innerText = data.length;
+            document.getElementById('vulnCount').innerText = data.filter(e =>
+                (e.tags || []).some(t => ['#Jailbreak', '#PromptInjection', '#PII', '#HighSeverity'].includes(t))
+            ).length;
+            document.getElementById('modelCount').innerText = new Set(data.map(e => e.model)).size;
+            if (data.length > 0) {
+                document.getElementById('lastDate').innerText = moment(data[0].timestamp).fromNow();
+            }
+        }
+
+        function renderFilters(data) {
+            const tags = new Set();
+            data.forEach(e => (e.tags || []).forEach(t => tags.add(t)));
+
+            let html = `<button onclick="renderEntries(allEntries)" class="bg-slate-700 text-xs font-bold px-4 py-1.5 rounded-full hover:bg-slate-600 transition text-white ring-1 ring-slate-600">ALL</button>`;
+            tags.forEach(tag => {
+                const color = getTagColor(tag);
+                html += `<button onclick="filterByTag('${tag}')" class="${color} text-xs font-bold px-4 py-1.5 rounded-full transition opacity-80 hover:opacity-100 hover:shadow-md hover:-translate-y-0.5 transform">${tag}</button>`;
+            });
+            filters.innerHTML = html;
+        }
+
+        function filterByTag(tag) {
+            const filtered = allEntries.filter(e => (e.tags || []).includes(tag));
+            renderEntries(filtered);
+        }
+
+        function getTagColor(tag) {
+            if (['#Jailbreak', '#PromptInjection', '#HighSeverity'].includes(tag)) return 'bg-red-950 text-red-300 border border-red-800';
+            if (['#PII', '#DataLeak'].includes(tag)) return 'bg-orange-950 text-orange-300 border border-orange-800';
+            if (['#Success', '#Refusal'].includes(tag)) return 'bg-emerald-950 text-emerald-300 border border-emerald-800';
+            return 'bg-slate-800 text-slate-300 border border-slate-600';
+        }
+
+        function renderEntries(data) {
+            feed.innerHTML = '';
+            data.forEach(entry => {
+                const date = moment(entry.timestamp).format('MMM Do, h:mm a');
+                const info = getModelInfo(entry.model);
+                const typeIcon = getTypeIcon(info.type);
+
+                const tagsHtml = (entry.tags || []).map(tag =>
+                    `<span class="${getTagColor(tag)} text-[10px] px-2 py-1 rounded uppercase tracking-wider font-bold mr-2">${tag}</span>`
+                ).join('');
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-800 rounded-xl border border-slate-700 p-6 card shadow-xl relative overflow-hidden group';
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-5 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="tooltip">
+                                <span class="bg-slate-900/80 text-purple-200 text-xs font-mono px-3 py-1.5 rounded-md border border-purple-500/30 cursor-help hover:border-purple-400 transition flex items-center gap-2">
+                                    <span>${typeIcon}</span>
+                                    ${entry.model}
+                                </span>
+                                <span class="tooltiptext">
+                                    <strong>Focus: ${info.type.toUpperCase()}</strong>
+                                    ${info.desc}
+                                </span>
+                            </div>
+                            <span class="text-slate-500 text-xs font-mono border-l border-slate-700 pl-3">${date}</span>
+                        </div>
+                        <div>${tagsHtml}</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <!-- Prompt -->
+                        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 group-hover:border-purple-500/20 transition duration-300">
+                            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2">
+                                <div class="text-xs text-slate-400 uppercase font-bold tracking-widest">Attacker Input</div>
+                                <button class="text-slate-600 hover:text-white transition" title="Copy" onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
+                            <div class="mono text-sm text-slate-300 whitespace-pre-wrap max-h-60 overflow-y-auto custom-scrollbar">${entry.prompt}</div>
+                        </div>
+
+                        <!-- Response -->
+                        <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50 relative overflow-hidden group-hover:border-pink-500/20 transition duration-300">
+                            <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-pink-500 opacity-50"></div>
+                            <div class="flex justify-between items-center mb-3 border-b border-slate-800 pb-2 pl-3">
+                                <div class="text-xs text-slate-400 uppercase font-bold tracking-widest">AI Response</div>
+                            </div>
+                            <div class="mono text-sm text-slate-300 whitespace-pre-wrap pl-3 max-h-60 overflow-y-auto custom-scrollbar">${entry.response}</div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mt-5 pt-4 border-t border-slate-700/50 flex gap-4 items-start relative z-10">
+                        <div class="text-2xl mt-[-4px]">📝</div>
+                        <div class="text-slate-400 text-sm italic leading-relaxed w-full">"${entry.notes}"</div>
+                    </div>
+                `;
+                feed.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
