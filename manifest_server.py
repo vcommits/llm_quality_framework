@@ -34,7 +34,7 @@ def resolve_model_type(m_id: str, p_tag: str = "") -> str:
     if any(x in tag_l for x in audio_kws) or any(x in mid_l for x in audio_kws): 
         return "audio"
         
-    # 2. Vision / Image / Video
+    # 2. Vision / Image / Video (Expanded for Fireworks & DeepInfra Image Models)
     vision_kws = [
         "vision", "vl", "multimodal", "omni", "pixtral", "dall-e", "flux", 
         "sora", "sdxl", "image", "video", "llava", "firellava", "qwen-vl", "kling", 
@@ -145,6 +145,7 @@ class Provider:
                         r = await client.get(self.url, headers=headers)
                         if r.status_code == 200:
                             data = r.json()
+                            # Handle both list and {"data": [...]} formats
                             items = data.get("data", data) if isinstance(data, dict) else data
                             for item in items:
                                 m_id = item.get("id")
@@ -225,7 +226,6 @@ class Provider:
                             m_id = item.get("id") or item.get("model_name") or item.get("model_id")
                             if not m_id: continue
                             
-                            # Refined tag extraction: Combine 'type' and 'task' to catch ASR/TTS variants
                             p_tag = f"{item.get('type', '')} {item.get('task', '')}"
                             m_name = item.get("name", item.get("model_name", m_id))
                             discovered.append({"model_id": m_id, "name": m_name, "type": resolve_model_type(m_id, p_tag)})
@@ -250,7 +250,7 @@ class Provider:
                 
         return discovered
 
-# MASTER REGISTRY: Complete 25-Key Alignment
+# MASTER REGISTRY
 REGISTRY = {
     "anthropic":   Provider("anthropic",   "maker",      "ANTHROPIC-API-KEY",     "https://api.anthropic.com/v1/models"),
     "deepinfra":   Provider("deepinfra",   "aggregator", "DEEPINFRA-API-KEY",     "https://api.deepinfra.com/v1/models"),
