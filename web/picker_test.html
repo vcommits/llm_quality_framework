@@ -2,129 +2,220 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghidorah | Amber State</title>
+    <title>Sentry Provider Picker v2.8.2</title>
     <style>
-        :root { --bg: #020617; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; --cta: #f59e0b; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 40px; }
-        .container { background: var(--card); padding: 2rem; border-radius: 12px; width: 100%; max-width: 500px; border: 1px solid #334155; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin: 0 0 1.5rem 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
-        .form-group { margin-bottom: 1.5rem; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: bold; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; }
-        select { width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #334155; background: #020617; color: white; font-size: 1rem; outline: none; transition: 0.2s; }
-        select:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
-        .cta-btn {
-            width: 100%; padding: 18px; border-radius: 8px; border: none;
-            background: var(--cta); color: #000; font-weight: 800;
-            font-size: 1rem; cursor: pointer; display: none; margin-top: 1rem;
-            text-transform: uppercase; letter-spacing: 1px;
+        :root {
+            --bg: #020617;
+            --card: #0f172a;
+            --border: #1e293b;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --text: #f8fafc;
         }
-        .cta-btn:hover { background: #fbbf24; transform: scale(1.02); }
-        .staging-info { margin-top: 1.5rem; padding: 12px; background: #000; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.8rem; color: #10b981; display: none; border: 1px solid #10b981; }
+
+        body {
+            background: var(--bg);
+            display: flex;
+            justify-content: center;
+            padding-top: 80px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .picker-card {
+            width: 400px;
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-log {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+        }
+
+        label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--accent);
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.05em;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg);
+            color: #fff;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            margin-bottom: 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        select:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        #cta-button {
+            width: 100%;
+            padding: 16px;
+            background: var(--warning);
+            color: #000;
+            font-weight: 900;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin-top: 10px;
+            display: none;
+            transition: opacity 0.2s;
+        }
+
+        #cta-button:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>Ghidorah Mesh</h2>
+    <div class="picker-card">
+        <div id="status-display" class="status-log">[OK] MESH: CONNECTING...</div>
 
-        <div class="form-group">
-            <label>1. Select Provider</label>
-            <select id="provider-select" onchange="fetchModels(this.value)">
-                <option value="">Hydrating Vault Keys...</option>
-            </select>
-        </div>
+        <label>1. Source Provider</label>
+        <select id="prov-list"><option value="">-- SEARCHING NODE 1 --</option></select>
 
-        <div class="form-group">
-            <label>2. Filter Type</label>
-            <select id="type-filter" onchange="applyFilters()" disabled>
-                <option value="all">-- ALL MODELS --</option>
-                <option value="text">📝 TEXT / CHAT</option>
-                <option value="vision">👁️ VISION / VL</option>
-                <option value="sensory">🎧 AUDIO / VOICE</option>
-                <option value="coding">💻 CODING / DEV</option>
-                <option value="embedding">🧬 SEMANTIC EMBEDDING</option>
-            </select>
-        </div>
+        <label>2. Capability Filter</label>
+        <select id="type-filter" disabled>
+            <option value="all">-- ALL MODELS --</option>
+            <option value="chat">TEXT GENERATION</option>
+            <option value="vision">MULTIMODAL / VISION</option>
+            <option value="audio">SENSORY / AUDIO</option>
+            <option value="coding">CODING / PYTHON</option>
+            <option value="embedding">EMBEDDING / RERANK</option>
+            <option value="agentic">🤖 AGENTIC / TOOL-USE</option>
+        </select>
 
-        <div class="form-group">
-            <label>3. Select Target</label>
-            <select id="model-picker" onchange="stageModel(this.value)" disabled>
-                <option value="">Waiting for provider...</option>
-            </select>
-        </div>
+        <label>3. Target Model</label>
+        <select id="model-list" disabled><option value="">-- AWAITING PROVIDER --</option></select>
 
-        <button id="cta-action" class="cta-btn" onclick="executeSelection()">INJECT PAYLOAD</button>
-        <div id="staging-area" class="staging-info"></div>
+        <button id="cta-button">Engage Target</button>
     </div>
 
     <script>
-        const SENTRY_URL = "http://100.101.24.26:8080";
-        let currentModels = [];
-        let stagedModel = null;
+        const API_BASE = 'http://100.101.24.26:8080';
+        const ui = {
+            status: document.getElementById('status-display'),
+            provider: document.getElementById('prov-list'),
+            filter: document.getElementById('type-filter'),
+            model: document.getElementById('model-list'),
+            cta: document.getElementById('cta-button')
+        };
 
-        async function initProviders() {
-            const providerSelect = document.getElementById('provider-select');
+        let activeModels = [];
+
+        // Wrapper to prevent the UI from hanging if the Pi drops offline
+        async function fetchWithTimeout(resource, options = {}) {
+            const { timeout = 5000 } = options;
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeout);
+            const response = await fetch(resource, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(id);
+            return response;
+        }
+
+        async function bootstrap() {
             try {
-                const res = await fetch(`${SENTRY_URL}/api/v1/providers`);
+                updateUI('Pinging Sentry Hub...', '#f59e0b');
+
+                const res = await fetchWithTimeout(`${API_BASE}/api/v1/providers`, { cache: "no-store", timeout: 5000 });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
                 const providers = await res.json();
-                let html = '<option value="">-- Choose Provider --</option>';
-                providers.forEach(p => html += `<option value="${p}">${p.toUpperCase()}</option>`);
-                providerSelect.innerHTML = html;
-            } catch (err) { providerSelect.innerHTML = '<option>Mesh Offline</option>'; }
+                updateUI('Mesh Online [v2.8.2]', '#10b981');
+
+                ui.provider.innerHTML = '<option value="">-- SELECT PROVIDER --</option>' +
+                    providers.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');
+
+                ui.provider.onchange = (e) => fetchManifest(e.target.value);
+                ui.filter.onchange = () => renderModels();
+                ui.model.onchange = (e) => {
+                    ui.cta.style.display = e.target.value ? 'block' : 'none';
+                    ui.cta.innerText = `Engage -> ${ui.provider.value.toUpperCase()}`;
+                };
+            } catch (err) {
+                // If it hits the 5-second timeout, it lands here instantly instead of hanging
+                updateUI(`Mesh Offline: ${err.name === 'AbortError' ? 'Timeout' : 'Refused'}`, '#ef4444');
+                ui.provider.innerHTML = '<option>SENTRY UNREACHABLE</option>';
+            }
         }
 
-        async function fetchModels(provider) {
-            if (!provider) return;
-            const picker = document.getElementById('model-picker');
-            const typeFilter = document.getElementById('type-filter');
+        async function fetchManifest(provider) {
+            if (!provider) {
+                ui.model.innerHTML = '<option value="">-- AWAITING PROVIDER --</option>';
+                ui.model.disabled = true;
+                ui.filter.disabled = true;
+                ui.cta.style.display = 'none';
+                return;
+            }
+
+            updateUI(`Vaulting: ${provider}`, '#f59e0b');
+            ui.model.innerHTML = '<option>RETRIEVING KEY...</option>';
+            ui.cta.style.display = 'none';
+
             try {
-                const res = await fetch(`${SENTRY_URL}/api/v1/manifest/${provider}`);
+                // Generous 15s timeout for discovery fetching
+                const res = await fetchWithTimeout(`${API_BASE}/api/v1/manifest/${provider}`, { cache: "no-store", timeout: 15000 });
                 const data = await res.json();
-                currentModels = data.models || [];
-                typeFilter.disabled = false;
-                picker.disabled = false;
-                applyFilters();
-            } catch (err) { console.error(err); }
+                activeModels = data.models || [];
+
+                updateUI(`${activeModels.length} Models Discovered`, '#10b981');
+                ui.filter.disabled = false;
+                ui.model.disabled = false;
+                renderModels();
+            } catch (e) {
+                updateUI('Discovery Error', '#ef4444');
+            }
         }
 
-        function applyFilters() {
-            const selectedType = document.getElementById('type-filter').value;
-            const picker = document.getElementById('model-picker');
-            const filtered = currentModels.filter(m => selectedType === "all" || m.tags.type === selectedType || m.tags.capability === selectedType);
-            let html = `<option value="">-- ${filtered.length} Targets Found --</option>`;
-            filtered.forEach(m => html += `<option value="${m.id}">${m.id}</option>`);
-            picker.innerHTML = html;
-            document.getElementById('cta-action').style.display = 'none';
-            document.getElementById('staging-area').style.display = 'none';
+        function renderModels() {
+            const filterType = ui.filter.value;
+            const filtered = activeModels.filter(m => filterType === 'all' || m.type === filterType);
+
+            ui.model.innerHTML = `<option value="">-- ${filtered.length} TARGETS --</option>` +
+                filtered.map(m => {
+                    const val = m.model_id || m.id || m.name;
+                    const text = m.name || m.displayName || val;
+                    return `<option value="${val}">${text}</option>`;
+                }).join('');
+
+            ui.cta.style.display = 'none';
         }
 
-        function stageModel(modelId) {
-            const cta = document.getElementById('cta-action');
-            const staging = document.getElementById('staging-area');
-            if (!modelId) { cta.style.display = 'none'; staging.style.display = 'none'; return; }
-
-            stagedModel = currentModels.find(m => m.id === modelId);
-            cta.style.display = 'block';
-            staging.style.display = 'block';
-            staging.innerText = `LOCKED: [${stagedModel.provider.toUpperCase()}] >> ${modelId}`;
-
-            const type = stagedModel.tags.type;
-            const cap = stagedModel.tags.capability;
-
-            if (cap === 'reasoning') cta.innerText = "Execute Reasoning Logic";
-            else if (cap === 'embedding') cta.innerText = "Anchor Semantic Space";
-            else if (type === 'coding') cta.innerText = "Run Code Evaluation";
-            else if (type === 'sensory') cta.innerText = "Interrogate Sensory Stream";
-            else if (type === 'vision') cta.innerText = "Inject Vision Payload";
-            else cta.innerText = "Inject Text Payload";
+        function updateUI(msg, color) {
+            ui.status.innerText = `[OK] ${msg}`;
+            ui.status.style.color = color;
         }
 
-        function executeSelection() {
-            alert(`Discovery Phase Complete. Staging Model: ${stagedModel.id} for Node 2 Injection.`);
-        }
-
-        initProviders();
+        window.onload = bootstrap;
     </script>
 </body>
 </html>
